@@ -10,12 +10,19 @@ define [
 ], (App, Ace, SearchBox, UndoManager, AutoCompleteManager, SpellCheckManager, HighlightsManager, CursorPositionManager) ->
 	EditSession = ace.require('ace/edit_session').EditSession
 	
+	
+	useFingerprints = false
+
+
 	# Ace loads its script itself, so we need to hook in to be able to clear
 	# the cache.
 	if !ace.config._moduleUrl?
 		ace.config._moduleUrl = ace.config.moduleUrl
 		ace.config.moduleUrl = (args...) ->
-			url = ace.config._moduleUrl(args...) + "?fingerprint=#{window.aceFingerprint}"
+			if(useFingerprints)
+				url = ace.config._moduleUrl(args...) + "?fingerprint=#{window.aceFingerprint}"
+			else 
+				url = ace.config._moduleUrl(args...) 
 			return url
 
 	App.directive "aceEditor", ($timeout, $compile, $rootScope, event_tracking) ->
