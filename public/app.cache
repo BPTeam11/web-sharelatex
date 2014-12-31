@@ -480,15 +480,30 @@ js/directives/fineUpload.js
 js/base.js
 
 
+js/main/account-upgrade.js
+js/ide/pdfng/directives/pdfJs.js
+js/ide/pdfng/directives/pdfViewer.js
+js/ide/pdfng/directives/pdfTextLayer.js
+js/ide/pdfng/directives/pdfAnnotations.js
+js/ide/pdfng/directives/pdfHighlights.js
+js/ide/pdfng/directives/pdfRenderer.js
+js/ide/pdfng/directives/pdfSpinner.js
+js/ide/pdfng/directives/pdfPage.js 
+
+
 
 
 ### CSS ###
 stylesheets/style.css
 stylesheets/mainStyle.css
+js/libs/pdfListView/TextLayer.css
+js/libs/pdfListView/AnnotationsLayer.css
+js/libs/pdfListView/HighlightsLayer.css
+
 
 ### images ###
 img/logo.png
-
+img/lion-128.png
 
 
 ### socket.io ###
