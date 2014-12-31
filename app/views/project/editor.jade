@@ -80,33 +80,66 @@ block content
 
 	//- We need to do .replace(/\//g, '\\/') do that '</script>' -> '<\/script>'
 	//- and doesn't prematurely end the script tag.
-	script(type='text/javascript').
-		window.project_id = "!{project_id}";
-		window.websocketsUrl = "!{settings.websocketsUrl}";
-		window.userSettings = !{JSON.stringify(userSettings).replace(/\//g, '\\/')};
-		window.user = !{JSON.stringify(user).replace(/\//g, '\\/')};
-		window.csrfToken = "!{csrfToken}";
-		window.anonymous = #{anonymous};
-		window.requirejs = {
-			"paths" : {
-				"mathjax": "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML",
-				"moment": "libs/moment-2.7.0"
-			},
-			"urlArgs" : "fingerprint=#{fingerprint(jsPath + 'ide.js')}-#{fingerprint(jsPath + 'libs.js')}",
-			"waitSeconds": 0,
-			"shim": {
-				"libs/pdfListView/PdfListView": {
-					deps: ["libs/pdf"]
+
+
+	- if(useFingerprints) 
+		script(type='text/javascript').
+			window.project_id = "!{project_id}";
+			window.websocketsUrl = "!{settings.websocketsUrl}";
+			window.userSettings = !{JSON.stringify(userSettings).replace(/\//g, '\\/')};
+			window.user = !{JSON.stringify(user).replace(/\//g, '\\/')};
+			window.csrfToken = "!{csrfToken}";
+			window.anonymous = #{anonymous};
+			window.requirejs = {
+				"paths" : {
+					"mathjax": "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML",
+					"moment": "libs/moment-2.7.0"
 				},
-				"libs/pdf": {
-					deps: ["libs/compatibility"]
-				},
-				"ace/ext-searchbox": {
-					deps: ["ace/ace"]
+				"urlArgs" : "fingerprint=#{fingerprint(jsPath + 'ide.js')}-#{fingerprint(jsPath + 'libs.js')}",
+				"waitSeconds": 0,
+				"shim": {
+					"libs/pdfListView/PdfListView": {
+						deps: ["libs/pdf"]
+					},
+					"libs/pdf": {
+						deps: ["libs/compatibility"]
+					},
+					"ace/ext-searchbox": {
+						deps: ["ace/ace"]
+					}
 				}
-			}
-		};
-		window.aceFingerprint = "#{fingerprint(jsPath + 'ace/ace.js')}"
+			};
+			window.aceFingerprint = "#{fingerprint(jsPath + 'ace/ace.js')}"
+	- else 
+		script(type='text/javascript').
+			window.project_id = "!{project_id}";
+			window.websocketsUrl = "!{settings.websocketsUrl}";
+			window.userSettings = !{JSON.stringify(userSettings).replace(/\//g, '\\/')};
+			window.user = !{JSON.stringify(user).replace(/\//g, '\\/')};
+			window.csrfToken = "!{csrfToken}";
+			window.anonymous = #{anonymous};
+			window.requirejs = {
+				"paths" : {
+					"mathjax": "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML",
+					"moment": "libs/moment-2.7.0"
+				},
+				"urlArgs" : "",
+				"waitSeconds": 0,
+				"shim": {
+					"libs/pdfListView/PdfListView": {
+						deps: ["libs/pdf"]
+					},
+					"libs/pdf": {
+						deps: ["libs/compatibility"]
+					},
+					"ace/ext-searchbox": {
+						deps: ["ace/ace"]
+					}
+				}
+			};
+			window.aceFingerprint = ""
+
+
 
 	script(type='text/javascript').
 		ga('send', 'event', 'editor-interaction', 'editor-opened')
