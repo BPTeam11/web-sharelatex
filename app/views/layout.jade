@@ -189,7 +189,7 @@ html(itemscope, itemtype='http://schema.org/Product', manifest='/app.cache')
 			- if(typeof(suppressFooter) == "undefined")
 				script(type='text/javascript').
 					window.requirejs = {
-						"urlArgs" : "fingerprint=#{fingerprint(jsPath + 'main.js')}-#{fingerprint(jsPath + 'libs.js')}",
+						"urlArgs" : "",
 						"paths" : {
 							"moment": "libs/moment-2.7.0"
 						}
@@ -197,7 +197,7 @@ html(itemscope, itemtype='http://schema.org/Product', manifest='/app.cache')
 				script(
 					data-main=jsPath+'main.js',
 					baseurl=jsPath,
-					src=jsPath+'libs/require.js?fingerprint='+fingerprint(jsPath + 'libs/require.js')
+					src=jsPath+'libs/require.js'
 				)
 
 
