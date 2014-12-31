@@ -5,6 +5,7 @@ block vars
 	- var suppressFooter = true
 	- var suppressDefaultJs = true
 	- var suppressSystemMessages = true
+	- var useFingerprints = false
 
 block content
 	.editor(ng-controller="IdeController").full-size
@@ -127,11 +128,19 @@ block content
 			window.requirejs.paths['libs/pdf'] = 'libs/pdfjs-1.0.712/pdf'
 			window.requirejs.paths['libs/compatibility'] = 'libs/pdfjs-1.0.712/compatibility'
 
-	script(
-		data-main=jsPath+"ide.js",
-		baseurl=jsPath,
-		data-ace-base=jsPath+'ace',
-		src=jsPath+'libs/require.js?fingerprint='+fingerprint(jsPath + 'libs/require.js')
-	)
+	- if(useFingerprints) 
+		script(
+			data-main=jsPath+"ide.js",
+			baseurl=jsPath,
+			data-ace-base=jsPath+'ace',
+			src=jsPath+'libs/require.js?fingerprint='+fingerprint(jsPath + 'libs/require.js')
+		)
+	-else 
+		script(
+			data-main=jsPath+"ide.js",
+			baseurl=jsPath,
+			data-ace-base=jsPath+'ace',
+			src=jsPath+'libs/require.js'
+		)
 		
 
