@@ -104,7 +104,7 @@ js/models/revisionHistoryModel.js
 js/text.js
 js/main.js
 js/modules/recursionHelper.js
-
+js/modules/errorCatcher.js
 
 js/utils/underscore.js
 js/utils/EventEmitter.js
@@ -152,6 +152,7 @@ js/libs/typeahead.js
 js/libs/mustache.js
 js/libs/sinon.js
 js/libs/sharejs.js
+js/libs/jquery-1.11.1.min.js
 js/filters/formatDate.js
 js/main/group-members.js
 js/main/user-details.js
@@ -477,6 +478,9 @@ js/directives/asyncForm.js
 js/directives/selectAll.js
 js/directives/fineUpload.js
 js/base.js
+
+
+
 
 ### CSS ###
 stylesheets/style.css
