@@ -49,7 +49,9 @@ define [
 				fn()
 			else
 				this.$originalApply(fn);
-		isOnline = false;
+		#Com1: set a breakpoint here to set isOnline = false with the debugger when you go offline
+		#later we probably can detect isOnline
+		isOnline = true;
 		if(isOnline)
 			$scope.state = {
 				loading: true
@@ -79,7 +81,20 @@ define [
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
 
-		ide.connectionManager = new ConnectionManager(ide, $scope)
+		#Com2: if we're online do what you always do
+		if(isOnline) 
+			ide.connectionManager = new ConnectionManager(ide, $scope)
+		#if we're offline create a 'dummy' ide.connectionManager and ide.socket
+		#later we should remove the dummies
+		else
+			ide.connectionManager = 
+				disconnect : () -> console("Testbranch: connectionManager delete()")
+				reconnectImmediately : () -> console("Testbranch: connectionManager reconnectImmediately()")
+			ide.socket = 
+				on : (EventName, func = (a...) -> ) -> 
+					console.log("Testbranch: The event: " + EventName + "was registered by socket.on")
+				emit :  (EventName, func = (a...) -> ) -> 
+					console.log("Testbranch: The event: " + EventName + "was send with socket.emit")
 		ide.fileTreeManager = new FileTreeManager(ide, $scope)
 		ide.editorManager = new EditorManager(ide, $scope)
 		ide.onlineUsersManager = new OnlineUsersManager(ide, $scope)
