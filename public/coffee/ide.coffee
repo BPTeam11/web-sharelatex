@@ -49,11 +49,18 @@ define [
 				fn()
 			else
 				this.$originalApply(fn);
-
-		$scope.state = {
-			loading: true
-			load_progress: 40
-		}
+		isOnline = false;
+		if(isOnline)
+			$scope.state = {
+				loading: true
+				load_progress: 40
+			}
+		else 
+			$scope.state = {
+				loading: false
+				load_progress: 100
+			}
+			
 		$scope.ui = {
 			leftMenuShown: false
 			view: "editor"
