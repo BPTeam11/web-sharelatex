@@ -94,11 +94,12 @@ define [
 			ide.socket = 
 				on : (EventName, func = (a...) -> ) -> 
 					console.log("Testbranch: The event: " + EventName + "was registered by socket.on")
-				emit :  (EventName, doc_id, version, callback) -> 
+				emit :  (EventName, args..., callback) -> 
 					console.log("Testbranch: The event: " + EventName + "was send with socket.emit")
 					#return the 'dummy' DocLines if the event is joinDoc
 					if(EventName == "joinDoc")
-						callback null, ["I always thought something was fundamentally wrong with the universe", "another line"],0
+						callback null, ["I always thought something was fundamentally wrong with the universe", "another line"],0, []
+				socket : {connected : true}
 			#dummy project:
 			project = 
 				_id : "54a3eb428738a0fb421300ec"
