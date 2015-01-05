@@ -148,6 +148,13 @@ define [
 						
 			$scope.project = project
 
+			#tell everybody that we joined a project:
+			#I assume the timeout is necessary because the other constructors have to be called first.
+			setTimeout(() =>
+				$scope.$broadcast "project:joined"
+				, 100)
+
+		#other constructors:
 		ide.fileTreeManager = new FileTreeManager(ide, $scope)
 		ide.editorManager = new EditorManager(ide, $scope)
 		ide.onlineUsersManager = new OnlineUsersManager(ide, $scope)
