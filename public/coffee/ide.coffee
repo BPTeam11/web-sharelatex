@@ -94,12 +94,11 @@ define [
 			ide.socket = 
 				on : (EventName, func = (a...) -> ) -> 
 					console.log("Testbranch: The event: " + EventName + "was registered by socket.on")
-				emit :  (EventName, doc_id, version, callback = (error, docLines, version) ->) -> 
+				emit :  (EventName, doc_id, version, callback) -> 
 					console.log("Testbranch: The event: " + EventName + "was send with socket.emit")
 					#return the 'dummy' DocLines if the event is joinDoc
 					if(EventName == "joinDoc")
-						callback null, ["\documentclass{article}", "\usepackage[utf8]{inputenc}", "", "\title{hurrdurr}", "\author{a }", "\date{December 2014}", "", "\usepackage{natbib}", "\usepackage{graphicx}", "", "\begin{document}", "", "\maketitle", "", "\section{Introduction}", "There is a theory which states that if ever anyone discovers exactly what the Universe is for and why it is here, it will instantly disappear and be replaced by something even more bizarre and inexplicable.", "There is another theory which states that this has already happened.", "", "\begin{figure}[h!]", "\centering", "\includegraphics[scale=1.7]{universe.jpg}", "\caption{The Universe}", "\label{fig:univerise}", "\end{figure}", "", "\section{Conclusion}", "``I always thought something was fundamentally wrong with the universe'' \citep{adams1995hitchhiker}", "", "\bibliographystyle{plain}", "\bibliography{references}", "\end{document}", ""],0
-
+						callback null, ["I always thought something was fundamentally wrong with the universe", "another line"],0
 			#dummy project:
 			project = 
 				_id : "54a3eb428738a0fb421300ec"
