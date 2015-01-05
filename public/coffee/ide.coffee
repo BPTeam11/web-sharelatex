@@ -84,17 +84,70 @@ define [
 		#Com2: if we're online do what you always do
 		if(isOnline) 
 			ide.connectionManager = new ConnectionManager(ide, $scope)
-		#if we're offline create a 'dummy' ide.connectionManager and ide.socket
-		#later we should remove the dummies
+		#if we're offline create a 'dummy' ide.connectionManager and ide.socket and a dummy project
 		else
+			#dummy connectionManager:
 			ide.connectionManager = 
 				disconnect : () -> console("Testbranch: connectionManager delete()")
 				reconnectImmediately : () -> console("Testbranch: connectionManager reconnectImmediately()")
+			#dummy socket:
 			ide.socket = 
 				on : (EventName, func = (a...) -> ) -> 
 					console.log("Testbranch: The event: " + EventName + "was registered by socket.on")
 				emit :  (EventName, func = (a...) -> ) -> 
 					console.log("Testbranch: The event: " + EventName + "was send with socket.emit")
+			#dummy project:
+			project = 
+				_id : "54a3eb428738a0fb421300ec"
+				compiler : "pdflatex"
+				deletedByExternalDataSource : false
+				deletedDocs: []
+				description: ""
+				dropboxEnabled: false
+				features : 
+					collaborators: -1
+					compileGroup: "standard"
+					compileTimeout: 60
+					dropbox: true
+					versioning: true
+				members : []
+				name: "Project 1"
+				owner : 
+					_id: "5470ec2a44da473009b5d6df"
+					email: "a@a.de"
+					first_name: "a"
+					last_name: ""
+					privileges: "owner"
+					signUpDate: "2014-11-22T20:03:54.169Z"
+				publicAccesLevel: "private"
+				rootDoc_id: "54a3eb428738a0fb421300ed"
+				rootFolder: [
+					{
+						_id: "54a3eb428738a0fb421300eb"
+						docs: [
+							{								
+								_id: "54a3eb428738a0fb421300ed"
+								name: "main.tex"
+							},
+							{
+								_id: "54a3eb428738a0fb421300ee"
+								name: "references.bib"
+							}
+						]
+						fileRefs : [
+							{
+								_id: "54a3eb428738a0fb421300ef"
+								name: "universe.jpg"
+							}
+						],
+						folders : []
+						name: "rootFolder"
+					}
+				]
+				spellCheckLanguage: "en"
+						
+			$scope.project = project
+
 		ide.fileTreeManager = new FileTreeManager(ide, $scope)
 		ide.editorManager = new EditorManager(ide, $scope)
 		ide.onlineUsersManager = new OnlineUsersManager(ide, $scope)
