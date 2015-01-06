@@ -1,7 +1,8 @@
 define [
 	"utils/EventEmitter"
 	"ide/editor/ShareJsDoc"
-], (EventEmitter, ShareJsDoc) ->
+	"ide/offline-store/OfflineStoreManager"
+], (EventEmitter, ShareJsDoc, OfflineStoreManager) ->
 	class Document extends EventEmitter
 		@getDocument: (ide, doc_id) ->
 			@openDocs ||= {}
@@ -95,8 +96,7 @@ define [
 			if @connected
 				return @_joinDoc callback
 			else
-				@_joinCallbacks ||= []
-				@_joinCallbacks.push callback
+				@_joinDocOffline callback
 
 		leave: (callback = (error) ->) ->
 			@wantToBeJoined = false
@@ -179,20 +179,38 @@ define [
 				callback()
 			delete @_joinCallbacks
 
+		_joinUpdatedDocCallback: (callback = (error) ->) ->
+			(error, docLines, version, updates) =>
+				return callback(error) if error?
+				@joined = true
+				@doc.catchUp( updates )
+				callback()
+				
+		_joinNewDocCallback: (callback = (error) ->) ->
+			(error, docLines, version) =>
+				return callback(error) if error?
+				@joined = true
+				@doc = new ShareJsDoc @doc_id, docLines, version, @ide.socket
+				@_bindToShareJsDocEvents()
+				callback()
+
+		# called when connected
+		# for offline joining, see _joinDocOffline
 		_joinDoc: (callback = (error) ->) ->
 			if @doc?
-				@ide.socket.emit 'joinDoc', @doc_id, @doc.getVersion(), (error, docLines, version, updates) =>
-					return callback(error) if error?
-					@joined = true
-					@doc.catchUp( updates )
-					callback()
+				@ide.socket.emit 'joinDoc', @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
 			else
-				@ide.socket.emit 'joinDoc', @doc_id, (error, docLines, version) =>
-					return callback(error) if error?
-					@joined = true
-					@doc = new ShareJsDoc @doc_id, docLines, version, @ide.socket
-					@_bindToShareJsDocEvents()
-					callback()
+				@ide.socket.emit 'joinDoc', @doc_id, @_joinNewDocCallback(callback)
+
+		# called when disconnected
+		# for online joining, see _joinDoc		
+		_joinDocOffline: (callback = (error) ->) ->
+			if @doc?
+				OfflineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
+			else
+				OfflineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
+				
+
 
 		_leaveDoc: (callback = (error) ->) ->
 			@ide.socket.emit 'leaveDoc', @doc_id, (error) =>
