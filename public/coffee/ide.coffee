@@ -49,20 +49,11 @@ define [
 				fn()
 			else
 				this.$originalApply(fn);
-		#Com1: set a breakpoint here to set isOnline = false with the debugger when you go offline
-		#later we probably can detect isOnline
-		isOnline = true;
-		if(isOnline)
-			$scope.state = {
-				loading: true
-				load_progress: 40
-			}
-		else 
-			$scope.state = {
-				loading: false
-				load_progress: 100
-			}
-			
+
+		$scope.state = {
+			loading: true
+			load_progress: 40
+		}
 		$scope.ui = {
 			leftMenuShown: false
 			view: "editor"
@@ -81,84 +72,7 @@ define [
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
 
-		#Com2: if we're online do what you always do
-		if(isOnline) 
-			ide.connectionManager = new ConnectionManager(ide, $scope)
-		#if we're offline create a 'dummy' ide.connectionManager and ide.socket and a dummy project
-		else
-			#dummy connectionManager:
-			ide.connectionManager = 
-				disconnect : () -> console.log("Testbranch: connectionManager disconnect()")
-				reconnectImmediately : () -> console.log("Testbranch: connectionManager reconnectImmediately()")
-			#dummy socket:
-			ide.socket = 
-				on : (EventName, func = (a...) -> ) -> 
-					console.log("Testbranch: The event: " + EventName + " was registered by socket.on")
-				emit :  (EventName, args..., callback) -> 
-					console.log("Testbranch: The event: " + EventName + " was send with socket.emit")
-					#return the 'dummy' DocLines if the event is joinDoc
-					if(EventName == "joinDoc")
-						callback null, ["I always thought something was fundamentally wrong with the universe", "another line"],0, []
-				socket : {connected : true}
-			#dummy project:
-			project = 
-				_id : "54a3eb428738a0fb421300ec"
-				compiler : "pdflatex"
-				deletedByExternalDataSource : false
-				deletedDocs: []
-				description: ""
-				dropboxEnabled: false
-				features : 
-					collaborators: -1
-					compileGroup: "standard"
-					compileTimeout: 60
-					dropbox: true
-					versioning: true
-				members : []
-				name: "Project 1"
-				owner : 
-					_id: "5470ec2a44da473009b5d6df"
-					email: "a@a.de"
-					first_name: "a"
-					last_name: ""
-					privileges: "owner"
-					signUpDate: "2014-11-22T20:03:54.169Z"
-				publicAccesLevel: "private"
-				rootDoc_id: "54a3eb428738a0fb421300ed"
-				rootFolder: [
-					{
-						_id: "54a3eb428738a0fb421300eb"
-						docs: [
-							{								
-								_id: "54a3eb428738a0fb421300ed"
-								name: "main.tex"
-							},
-							{
-								_id: "54a3eb428738a0fb421300ee"
-								name: "references.bib"
-							}
-						]
-						fileRefs : [
-							{
-								_id: "54a3eb428738a0fb421300ef"
-								name: "universe.jpg"
-							}
-						],
-						folders : []
-						name: "rootFolder"
-					}
-				]
-				spellCheckLanguage: "en"
-						
-			$scope.project = project
-
-			#tell everybody that we joined a project:
-			#I assume (havent tested anything) the timeout is necessary because the other constructors have to be called first.
-			setTimeout(() =>
-				$scope.$broadcast "project:joined"
-				, 100)
-
-		#other constructors:
+		ide.connectionManager = new ConnectionManager(ide, $scope)
 		ide.fileTreeManager = new FileTreeManager(ide, $scope)
 		ide.editorManager = new EditorManager(ide, $scope)
 		ide.onlineUsersManager = new OnlineUsersManager(ide, $scope)
