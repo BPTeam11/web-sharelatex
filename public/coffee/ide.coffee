@@ -88,14 +88,14 @@ define [
 		else
 			#dummy connectionManager:
 			ide.connectionManager = 
-				disconnect : () -> console("Testbranch: connectionManager disconnect()")
-				reconnectImmediately : () -> console("Testbranch: connectionManager reconnectImmediately()")
+				disconnect : () -> console.log("Testbranch: connectionManager disconnect()")
+				reconnectImmediately : () -> console.log("Testbranch: connectionManager reconnectImmediately()")
 			#dummy socket:
 			ide.socket = 
 				on : (EventName, func = (a...) -> ) -> 
-					console.log("Testbranch: The event: " + EventName + "was registered by socket.on")
+					console.log("Testbranch: The event: " + EventName + " was registered by socket.on")
 				emit :  (EventName, args..., callback) -> 
-					console.log("Testbranch: The event: " + EventName + "was send with socket.emit")
+					console.log("Testbranch: The event: " + EventName + " was send with socket.emit")
 					#return the 'dummy' DocLines if the event is joinDoc
 					if(EventName == "joinDoc")
 						callback null, ["I always thought something was fundamentally wrong with the universe", "another line"],0, []
