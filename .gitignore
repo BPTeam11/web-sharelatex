@@ -1,4 +1,4 @@
-Compiled source #
+# Compiled source #
 ###################
 *.com
 *.class
@@ -6,6 +6,9 @@ Compiled source #
 *.exe
 *.o
 *.so
+
+# Autosave #
+*~
 
 # Packages #
 ############
