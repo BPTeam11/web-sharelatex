@@ -88,7 +88,7 @@ define [
 		else
 			#dummy connectionManager:
 			ide.connectionManager = 
-				disconnect : () -> console("Testbranch: connectionManager delete()")
+				disconnect : () -> console("Testbranch: connectionManager disconnect()")
 				reconnectImmediately : () -> console("Testbranch: connectionManager reconnectImmediately()")
 			#dummy socket:
 			ide.socket = 
