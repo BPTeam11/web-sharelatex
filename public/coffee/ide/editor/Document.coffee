@@ -1,8 +1,7 @@
 define [
 	"utils/EventEmitter"
 	"ide/editor/ShareJsDoc"
-	"ide/offline-store/OfflineStoreManager"
-], (EventEmitter, ShareJsDoc, OfflineStoreManager) ->
+], (EventEmitter, ShareJsDoc) ->
 	class Document extends EventEmitter
 		@getDocument: (ide, doc_id) ->
 			@openDocs ||= {}
@@ -206,9 +205,9 @@ define [
 		# for online joining, see _joinDoc		
 		_joinDocOffline: (callback = (error) ->) ->
 			if @doc?
-				OfflineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
+				@ide.offlineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
 			else
-				OfflineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
+				@ide.offlineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
 				
 
 
