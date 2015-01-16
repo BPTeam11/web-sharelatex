@@ -64,3 +64,12 @@ define () ->
 				]
 				spellCheckLanguage: "en"
 			callback(null, project, null, null) #permissionlevel is a string = "readOnly" or "readAndWrite" or "owner". We should save that in the index.db too
+
+
+
+		createDoc : (name, id, csrfToken) ->
+			if id?
+				console.log("OfflineManager: " + name + " " + " id: " + id + " csrfToken: " + csrfToken)
+			
+			
+

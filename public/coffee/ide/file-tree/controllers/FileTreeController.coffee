@@ -56,11 +56,16 @@ define [
 
 			$scope.create = () ->
 				$scope.state.inflight = true
-				ide.fileTreeManager
-					.createDoc($scope.inputs.name, parent_folder)
-					.success () ->
-						$scope.state.inflight = false
-						$modalInstance.close()
+				if(ide.socket.socket.connected) 
+					ide.fileTreeManager
+						.createDoc($scope.inputs.name, parent_folder)
+						.success () ->
+							$scope.state.inflight = false
+							$modalInstance.close()
+				else
+					ide.fileTreeManager.createDocOffline($scope.inputs.name, parent_folder)
+					$scope.state.inflight = false
+					$modalInstance.close()
 
 			$scope.cancel = () ->
 				$modalInstance.dismiss('cancel')
