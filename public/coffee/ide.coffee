@@ -75,8 +75,6 @@ define [
 		ide.$scope = $scope
 
 
-
-		ide.offlineStoreManager = new OfflineStoreManager()
 		try 
 			ide.connectionManager = new ConnectionManager(ide, $scope)
 		catch error
@@ -100,7 +98,7 @@ define [
 				socket : {connected : false}
 			#dummy project:
 			
-			ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
+			OfflineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
 				$scope.project = project
 
 			#tell everybody that we joined a project:
