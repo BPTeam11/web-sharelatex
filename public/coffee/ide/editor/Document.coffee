@@ -1,7 +1,8 @@
 define [
 	"utils/EventEmitter"
 	"ide/editor/ShareJsDoc"
-], (EventEmitter, ShareJsDoc) ->
+	"ide/offline-store/OfflineStoreManager"
+], (EventEmitter, ShareJsDoc, OfflineStoreManager) ->
 	class Document extends EventEmitter
 		@getDocument: (ide, doc_id) ->
 			@openDocs ||= {}
@@ -97,14 +98,22 @@ define [
 			else
 				@_joinDocOffline callback
 
-		leave: (callback = (error) ->) ->
+		leave: (callback = (error) ->) =>
 			@wantToBeJoined = false
 			@_cancelJoin()
-			if (@doc? and @doc.hasBufferedOps())
-				@_leaveCallbacks ||= []
-				@_leaveCallbacks.push callback
-			else if !@connected
-				callback()
+
+			if @doc?
+				OfflineStoreManager.cacheDocument this
+				if @doc.hasBufferedOps()
+					if @connected
+						@_leaveCallbacks ||= []
+						@_leaveCallbacks.push callback
+					else
+						for op in @doc.getInflightOp
+							OfflineStoreManager.applyOtUpdate @docId op
+
+						for op in @doc.getPendingOp
+							OfflineStoreManager.applyOtUpdate @docId op
 			else
 				@_leaveDoc(callback)
 
@@ -205,9 +214,9 @@ define [
 		# for online joining, see _joinDoc		
 		_joinDocOffline: (callback = (error) ->) ->
 			if @doc?
-				@ide.offlineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
+				OfflineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
 			else
-				@ide.offlineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
+				OfflineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
 				
 
 

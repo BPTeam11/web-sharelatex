@@ -3,17 +3,30 @@ define () ->
 	# unitl document caching is implemented
 
 	class OfflineStoreManager
-		joinNewDoc: (id, callback = (error, doclines, version) ->) ->
+		@ide = null
+		@cache = []
+
+		@cacheDocument: (doc) ->
+			@cache[doc.docId] = doc
+
+		@joinNewDoc: (id, callback = (error, doclines, version) ->) ->
 			console.log "Requested new doc #{id} offline"
 			console.log "id: #{typeof id}}"
-			callback(null, ["this document was not cached"], 1)
+			callback(
+				null
+				if @cache[id]? then @cache[id].getSnapshot() else ["this document was not cached"]
+				if @cache[id]? then @cache[id].doc.getVersion() else 0)
 
-		joinUpdatedDoc: (id, version, callback = (error, doclines, version, updates) ->) ->
+		@joinUpdatedDoc: (id, version, callback = (error, doclines, version, updates) ->) ->
 			console.log "Requested updated doc #{id} version #{version} offline"
 			console.log "id: #{typeof id}, version: #{typeof version}"
-			callback(null, ["this document was not cached"], version, [])
+			callback(
+				null
+				if @cache[id]? then @cache[id].getSnapshot() else ["this document was not cached"]
+				if @cache[id]? then @cache[id].doc.getVersion() else version
+				[]) # There can not be updates
 
-		joinProject: (project_id, callback = (err, project, permissionsLevel, protocolVersion) ->) ->
+		@joinProject: (project_id, callback = (err, project, permissionsLevel, protocolVersion) ->) ->
 			console.log "Requested project project #{project_id} version offline"
 			project = 
 				_id : "54a3eb428738a0fb421300ec"
@@ -64,3 +77,7 @@ define () ->
 				]
 				spellCheckLanguage: "en"
 			callback(null, project, null, null) #permissionlevel is a string = "readOnly" or "readAndWrite" or "owner". We should save that in the index.db too
+
+		@applyOtUpdate: (docId, update) =>
+			@cache[docId] ||= new Document @ide docId
+			@cache[docId]._onUpdateApplied update
