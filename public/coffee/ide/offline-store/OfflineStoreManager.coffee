@@ -80,7 +80,7 @@ define () ->
 
 
 
-		createDoc : (name, id, csrfToken) ->
+		@createDoc : (name, id, csrfToken) ->
 			if id?
 				console.log("OfflineManager: " + name + " " + " id: " + id + " csrfToken: " + csrfToken)
 			
