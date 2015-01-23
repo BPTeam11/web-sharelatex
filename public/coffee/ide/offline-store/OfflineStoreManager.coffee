@@ -49,10 +49,27 @@ define () ->
     @joinUpdatedDoc: (id, version, callback = (error, doclines, version, updates) ->) ->
       console.log "Requested updated doc #{id} version #{version} offline"
       console.log "id: #{typeof id}, version: #{typeof version}"
+
+      openRequest = window.indexedDB.open "sharelatex", 1
+
+      openRequest.onsuccess = (event) ->
+        db = event.target.result
+        tx = db.transaction "doc", "readonly"
+        store = tx.objectStore "doc"
+        request = store.get id
+        request.onsuccess = () ->
+          cachedDoc = request.result
+
+        tx.onabort = () ->
+          console.log "Error caching document: #{tx.error}"
+
+      openRequest.onerror = (event) ->
+        console.log "Error opening IndexedDB: #{event.target.errorCode}"
+
       callback(
         null
-        if @cache[id]? then @cache[id].getSnapshot() else ["this document was not cached"]
-        if @cache[id]? then @cache[id].doc.getVersion() else version
+        if cachedDoc? then cachedDoc.docLines else ["this document was not cached"]
+        if cachedDoc? then cachedDoc.version else version
         []) # There can not be updates
 
     @joinProject: (project_id, callback = (err, project, permissionsLevel, protocolVersion) ->) ->
