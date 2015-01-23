@@ -103,7 +103,7 @@ define [
       @_cancelJoin()
 
       if @doc?
-        offlineStoreManager = new OfflineStoreManager()
+        OfflineStoreManager.initdb()
         OfflineStoreManager.cacheDocument this
         if @doc.hasBufferedOps()
           if @connected

@@ -6,29 +6,37 @@ define () ->
     @ide = null
     @cache = []
 
-    constructor: () ->
-      console.log "Opening DB"
+    @initdb: () ->
       openRequest = window.indexedDB.open "sharelatex", 1
 
-      openRequest.onsuccess = (event) =>
+      openRequest.onsuccess = (event) ->
         db = event.target.result
-        console.log "Opening of DB successfull"
 
       openRequest.onerror = (event) ->
         console.log "Error opening IndexedDB: #{event.target.errorCode}"
 
       openRequest.onupgradeneeded = (event) ->
-        console.log "Creating DB"
         db = event.target.result
 
         store = db.createObjectStore "doc", keyPath: "doc_id"
         docLinesIndex = store.createIndex "docLines", "docLines", unique: false
         versionIndex = store.createIndex "version", "version", unique: false
 
-        console.log "IndexedDB successfully created"
-
     @cacheDocument: (doc) ->
-      @cache[doc.docId] = doc
+      openRequest = window.indexedDB.open "sharelatex", 1
+
+      openRequest.onsuccess = (event) ->
+        db = event.target.result
+        tx = db.transaction "doc", "readwrite"
+
+        store = tx.objectStore "doc"
+        store.put doclines: doc.getSnapshot(), version: doc.doc.getVersion(), doc_id: doc.doc_id
+
+        tx.onabort = () ->
+          console.log "Error caching document: #{tx.error}"
+
+      openRequest.onerror = (event) ->
+        console.log "Error opening IndexedDB: #{event.target.errorCode}"
 
     @joinNewDoc: (id, callback = (error, doclines, version) ->) ->
       console.log "Requested new doc #{id} offline"
