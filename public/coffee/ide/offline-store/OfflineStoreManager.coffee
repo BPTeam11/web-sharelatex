@@ -5,6 +5,8 @@ define () ->
 	class OfflineStoreManager
 		@ide = null
 		@cache = []
+		@CreatedDocCache = {}
+		@MapOfflineIdToOnlineId = {}
 
 		@cacheDocument: (doc) ->
 			@cache[doc.docId] = doc
@@ -79,12 +81,23 @@ define () ->
 			callback(null, project, null, null) #permissionlevel is a string = "readOnly" or "readAndWrite" or "owner". We should save that in the index.db too
 
 
+		@createDoc : (project_id, name, parent_folder_id, offline_doc_id, csrfToken, ide) ->
+			offline_information = {offline_doc_id : offline_doc_id, creator : ide.$scope.user.id}
+			@CreatedDocCache[offline_doc_id] = {project_id: project_id, name: name, parent_folder_id: parent_folder_id,  _csrf : csrfToken, offline_information : offline_information}   
+			console.log("OfflineManager: " + " project ID: " + project_id + "  name: " + name + " " + " id: " + offline_doc_id + " csrfToken: " + csrfToken)
+			
+		@upload : (ide) -> 
+			for offline_doc_id, document of @CreatedDocCache
+				ide.$http.post "/project/#{document.project_id}/doc", document
+		
+		@bindId : (offline_doc_id, online_do_id) ->	
+			@MapOfflineIdToOnlineId[offline_doc_id] = online_do_id
+			@removeFromOfflineCache(offline_doc_id)
+			console.log("The offline Doc Id is: " + offline_doc_id + "  and the online Doc Id is " +  online_do_id)
 
-		@createDoc : (name, id, csrfToken) ->
-			if id?
-				console.log("OfflineManager: " + name + " " + " id: " + id + " csrfToken: " + csrfToken)
-			
-			
+		@removeFromOfflineCache : (offline_doc_id) ->
+			delete @CreatedDocCache[offline_doc_id]
+
 
 		@applyOtUpdate: (docId, update) =>
 			@cache[docId] ||= new Document @ide docId

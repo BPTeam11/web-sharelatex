@@ -22,7 +22,9 @@ define [
 			@_bindToSocketEvents()
 
 		_bindToSocketEvents: () ->
-			@ide.socket.on "reciveNewDoc", (parent_folder_id, doc) =>
+			@ide.socket.on "reciveNewDoc", (parent_folder_id, doc, offline_information) =>
+				if(offline_information? && offline_information.creator == @$scope.user.id)
+					OfflineStoreManager.bindId offline_information.offline_doc_id, doc._id
 				parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder
 				@$scope.$apply () =>
 					parent_folder.children.push {
@@ -30,6 +32,7 @@ define [
 						id:   doc._id
 						type: "doc"
 					}
+					#Maybe add here: if !(offline_information? && offline_information.creator == @$scope.user.id)
 					@recalculateDocList()
 
 			@ide.socket.on "reciveNewFile", (parent_folder_id, file) =>
@@ -264,12 +267,13 @@ define [
 
 
 		createDocOffline:  (name, parent_folder = @getCurrentFolder()) ->
-			OfflineStoreManager.createDoc(name, parent_folder?.id, window.csrfToken)
+			offline_doc_id = parent_folder.children.length + "ID" 
+			OfflineStoreManager.createDoc(project_id, name, parent_folder?.id, offline_doc_id, window.csrfToken, @ide)
 			# parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder
 			@$scope.$apply () =>
 				parent_folder.children.push {
 					name: name
-					id:   parent_folder.children.length + "ID" #TODO change this to be the ids the indexDb generates or another reasonable algorithm
+					id:   offline_doc_id
 					type: "doc"
 				}
 				@recalculateDocList()

@@ -42,9 +42,12 @@ module.exports = EditorHttpController =
 		project_id = req.params.Project_id
 		name = req.body.name
 		parent_folder_id = req.body.parent_folder_id
-		EditorController.addDoc project_id, parent_folder_id, name, [], "editor", (error, doc) ->
+		console.log "InfoDump Req.body:\n"
+		console.log req.body
+		EditorController.addDoc project_id, parent_folder_id, name, [], "editor", req.body.offline_information, (error, doc) ->
 			return next(error) if error?
 			res.json doc
+
 
 	addFolder: (req, res, next) ->
 		project_id = req.params.Project_id

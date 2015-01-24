@@ -191,21 +191,27 @@ module.exports = EditorController =
 			DocumentUpdaterHandler.flushDocToMongo project_id, doc_id, callback
 
 
-	addDoc: (project_id, folder_id, docName, docLines, source, callback = (error, doc)->)->
+	addDoc: (project_id, folder_id, docName, docLines, source, optional_offline_information, callback = (error, doc)->)->
+		if typeof(optional_offline_information) == "function"	
+			callback = optional_offline_information
+			optional_offline_information = null
 		LockManager.getLock project_id, (err)->
 			if err?
 				logger.err err:err, project_id:project_id, source:source,  "could not get lock to addDoc"
 				return callback(err)
-			EditorController.addDocWithoutLock project_id, folder_id, docName, docLines, source, (error, doc)->
+			EditorController.addDocWithoutLock project_id, folder_id, docName, docLines, source, optional_offline_information, (error, doc)->
 				LockManager.releaseLock project_id, ->
 					callback(error, doc)
 
-	addDocWithoutLock: (project_id, folder_id, docName, docLines, source, callback = (error, doc)->)->
+	addDocWithoutLock: (project_id, folder_id, docName, docLines, source, optional_offline_information, callback = (error, doc)->)->
+		if typeof(optional_offline_information) == "function"
+			callback = optional_offline_information
+			optional_offline_information = null
 		docName = docName.trim()
 		logger.log {project_id, folder_id, docName, source}, "sending new doc to project"
 		Metrics.inc "editor.add-doc"
 		ProjectEntityHandler.addDoc project_id, folder_id, docName, docLines, (err, doc, folder_id)=>
-			EditorRealTimeController.emitToRoom(project_id, 'reciveNewDoc', folder_id, doc, source)
+			EditorRealTimeController.emitToRoom(project_id, 'reciveNewDoc', folder_id, doc, optional_offline_information, source)
 			callback(err, doc)
 
 
