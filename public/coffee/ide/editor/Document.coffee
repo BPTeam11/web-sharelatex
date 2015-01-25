@@ -200,6 +200,7 @@ define [
 				@joined = true
 				@doc = new ShareJsDoc @doc_id, docLines, version, @ide.socket
 				@_bindToShareJsDocEvents()
+				OfflineStoreManager.applyPendingUpdates @doc, @ide
 				callback()
 
 		# called when connected
@@ -209,6 +210,7 @@ define [
 				@ide.socket.emit 'joinDoc', @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
 			else
 				@ide.socket.emit 'joinDoc', @doc_id, @_joinNewDocCallback(callback)
+
 
 		# called when disconnected
 		# for online joining, see _joinDoc		

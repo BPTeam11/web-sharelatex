@@ -4,17 +4,18 @@ define () ->
 
 	class OfflineStoreManager
 		@ide = null
-		@cache = []
+		@cache = {}
+		@CreatedDocCache = {}
 
 		@cacheDocument: (doc) ->
-			@cache[doc.docId] = doc
+			@cache[doc.doc_id] = doc
 
 		@joinNewDoc: (id, callback = (error, doclines, version) ->) ->
 			console.log "Requested new doc #{id} offline"
 			console.log "id: #{typeof id}}"
 			callback(
 				null
-				if @cache[id]? then @cache[id].getSnapshot() else ["this document was not cached"]
+				if @cache[id]? then @cache[id].getSnapshot() else [""]
 				if @cache[id]? then @cache[id].doc.getVersion() else 0)
 
 		@joinUpdatedDoc: (id, version, callback = (error, doclines, version, updates) ->) ->
@@ -22,7 +23,7 @@ define () ->
 			console.log "id: #{typeof id}, version: #{typeof version}"
 			callback(
 				null
-				if @cache[id]? then @cache[id].getSnapshot() else ["this document was not cached"]
+				if @cache[id]? then @cache[id].getSnapshot() else [""]
 				if @cache[id]? then @cache[id].doc.getVersion() else version
 				[]) # There can not be updates
 
@@ -80,11 +81,32 @@ define () ->
 
 
 
-		@createDoc : (name, id, csrfToken) ->
-			if id?
-				console.log("OfflineManager: " + name + " " + " id: " + id + " csrfToken: " + csrfToken)
+		@createDoc : (project_id, name, parent_folder_id, offline_doc_id, csrfToken, ide) ->
+			@CreatedDocCache[offline_doc_id] = {project_id: project_id, name: name, parent_folder_id: parent_folder_id,  _csrf : csrfToken , uploaded : false}
+			console.log("OfflineManager: " + " project ID: " + project_id + "  name: " + name + " " + " id: " + offline_doc_id + " csrfToken: " + csrfToken)
+				
 			
-			
+		@upload : (ide) -> 
+			for offline_doc_id, document of @CreatedDocCache #cant upload multiple documents (well -> probably needs a timeout)
+				if (document.uploaded == false)
+					ide.$http.post "/project/#{document.project_id}/doc", document
+					document.uploaded = true
+					
+		@applyPendingUpdates : (doc, ide) ->
+			doc_id = doc.doc_id
+			doc_entity = ide.fileTreeManager.findEntityById(doc_id)	
+			for offline_doc_id, document of @CreatedDocCache 
+				if( doc_id != offline_doc_id && doc_entity.name == document.name && doc._doc.snapshot == "" ) # the last condition ensures that this is a new document.
+					if( @cache[offline_doc_id]? ) 
+						doc._doc.insert 0, @cache[offline_doc_id].doc._doc.snapshot, (error) -> #TODO there is a big problem, because if you only apply updates on join, someone else may already have written something in your offline created document which was still empty because you didn join
+							if error?
+								console.log "There was an error with updating the offline created Document"
+							else
+								console.log "The offline created Document was updated succesfully"
+						delete @cache[offline_doc_id]
+					delete @CreatedDocCache[offline_doc_id]
+				
+
 
 		@applyOtUpdate: (docId, update) =>
 			@cache[docId] ||= new Document @ide docId
