@@ -32,8 +32,8 @@ define [
 						id:   doc._id
 						type: "doc"
 					}
-					#Maybe add here: if !(offline_information? && offline_information.creator == @$scope.user.id)
 					@recalculateDocList()
+					#@ide.editorManager.openDoc(@findEntityById(doc._id)) #There is a sync error if you have an offline created document selected
 
 			@ide.socket.on "reciveNewFile", (parent_folder_id, file) =>
 				parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder

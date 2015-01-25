@@ -87,7 +87,7 @@ define () ->
 			console.log("OfflineManager: " + " project ID: " + project_id + "  name: " + name + " " + " id: " + offline_doc_id + " csrfToken: " + csrfToken)
 			
 		@upload : (ide) -> 
-			for offline_doc_id, document of @CreatedDocCache
+			for offline_doc_id, document of @CreatedDocCache #cant upload multiple documents (well -> probably needs a timeout)
 				ide.$http.post "/project/#{document.project_id}/doc", document
 		
 		@bindId : (offline_doc_id, online_do_id) ->	
