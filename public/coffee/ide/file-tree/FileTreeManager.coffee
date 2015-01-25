@@ -23,8 +23,6 @@ define [
 
 		_bindToSocketEvents: () ->
 			@ide.socket.on "reciveNewDoc", (parent_folder_id, doc, offline_information) =>
-				if(offline_information? && offline_information.creator == @$scope.user.id)
-					OfflineStoreManager.bindId offline_information.offline_doc_id, doc._id
 				parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder
 				@$scope.$apply () =>
 					parent_folder.children.push {
@@ -33,7 +31,11 @@ define [
 						type: "doc"
 					}
 					@recalculateDocList()
-					#@ide.editorManager.openDoc(@findEntityById(doc._id)) #There is a sync error if you have an offline created document selected
+					if(offline_information? && offline_information.creator == @$scope.user.id)
+						OfflineStoreManager.bindId offline_information.offline_doc_id, doc._id, @ide
+						#if we are using the offline cached document we have to reopen it (This is not enough however).
+						if(offline_information.offline_doc_id == @ide.editorManager.getCurrentDocId()) 
+							@ide.editorManager.openDoc(@findEntityById(doc._id)) 
 
 			@ide.socket.on "reciveNewFile", (parent_folder_id, file) =>
 				parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder
