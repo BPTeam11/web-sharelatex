@@ -1,11 +1,11 @@
-define () ->
+define [], () ->
 	# This class does just serves as a placeholder
 	# unitl document caching is implemented
 
 	class OfflineStoreManager
-	  constructor(@ide) ->
-		  @cache = {}
-		  @createdDocCache = {}
+		constructor: (@ide) ->
+		@cache = {}
+		@createdDocCache = {}
 
 		cacheDocument: (doc) =>
 			@cache[doc.doc_id] = doc

@@ -74,7 +74,7 @@ define [
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
 		
-		ide.offlineStoreManager = new OfflineStoreManger this
+		ide.offlineStoreManager = new OfflineStoreManager ide
 
 
 		try 
