@@ -1,4 +1,4 @@
-define ["ide/offline-store/OfflineStoreManager"], (OfflineStoreManager) ->
+define [], () ->
 	class ConnectionManager
 		constructor: (@ide, @$scope) ->
 			@connected = false
@@ -73,7 +73,7 @@ define ["ide/offline-store/OfflineStoreManager"], (OfflineStoreManager) ->
 					@$scope.state.load_progress = 100
 					@$scope.state.loading = false
 					@$scope.$broadcast "project:joined"
-					OfflineStoreManager.upload(@ide)
+					@ide.offlineStoreManager.upload(@ide)
 
 		reconnectImmediately: () ->
 			@disconnect()

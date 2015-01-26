@@ -73,6 +73,8 @@ define [
 
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
+		
+		ide.offlineStoreManager = new OfflineStoreManger this
 
 
 		try 
@@ -98,7 +100,7 @@ define [
 				socket : {connected : false}
 			#dummy project:
 			
-			OfflineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
+			ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) ->		
 				$scope.project = project
 
 			#tell everybody that we joined a project:

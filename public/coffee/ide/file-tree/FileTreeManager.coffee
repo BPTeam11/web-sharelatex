@@ -1,5 +1,4 @@
 define [
-	"ide/offline-store/OfflineStoreManager"
 	"ide/file-tree/directives/fileEntity"
 	"ide/file-tree/directives/draggable"
 	"ide/file-tree/directives/droppable"
@@ -7,7 +6,7 @@ define [
 	"ide/file-tree/controllers/FileTreeEntityController"
 	"ide/file-tree/controllers/FileTreeFolderController"
 	"ide/file-tree/controllers/FileTreeRootFolderController"
-], (OfflineStoreManager) ->
+], () ->
 	class FileTreeManager
 		constructor: (@ide, @$scope) ->
 			@$scope.$on "project:joined", =>
@@ -265,7 +264,7 @@ define [
 
 		createDocOffline:  (name, parent_folder = @getCurrentFolder()) ->
 			offline_doc_id = parent_folder.children.length + "ID" 
-			OfflineStoreManager.createDoc(project_id, name, parent_folder?.id, offline_doc_id, window.csrfToken, @ide)
+			@ide.offlineStoreManager.createDoc(project_id, name, parent_folder?.id, offline_doc_id, window.csrfToken, @ide)
 			# parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder
 			@$scope.$apply () =>
 				parent_folder.children.push {
