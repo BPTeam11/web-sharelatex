@@ -1,279 +1,281 @@
 define [
-	"utils/EventEmitter"
-	"ide/editor/ShareJsDoc"
-	"ide/offline-store/OfflineStoreManager"
+  "utils/EventEmitter"
+  "ide/editor/ShareJsDoc"
+  "ide/offline-store/OfflineStoreManager"
 ], (EventEmitter, ShareJsDoc, OfflineStoreManager) ->
-	class Document extends EventEmitter
-		@getDocument: (ide, doc_id) ->
-			@openDocs ||= {}
-			if !@openDocs[doc_id]?
-				@openDocs[doc_id] = new Document(ide, doc_id)
-			return @openDocs[doc_id]
 
-		@hasUnsavedChanges: () ->
-			for doc_id, doc of (@openDocs or {})
-				return true if doc.hasBufferedOps()
-			return false
+  class Document extends EventEmitter
+    @getDocument: (ide, doc_id) ->
+      @openDocs ||= {}
+      if !@openDocs[doc_id]?
+        @openDocs[doc_id] = new Document(ide, doc_id)
+      return @openDocs[doc_id]
 
-		constructor: (@ide, @doc_id) ->
-			@connected = @ide.socket.socket.connected
-			@joined = false
-			@wantToBeJoined = false
-			@_checkConsistency = _.bind(@_checkConsistency, @)
-			@inconsistentCount = 0
-			@_bindToEditorEvents()
-			@_bindToSocketEvents()
+    @hasUnsavedChanges: () ->
+      for doc_id, doc of (@openDocs or {})
+        return true if doc.hasBufferedOps()
+      return false
 
-		attachToAce: (@ace) ->
-			@doc?.attachToAce(@ace)
-			editorDoc = @ace.getSession().getDocument()
-			editorDoc.on "change", @_checkConsistency
+    constructor: (@ide, @doc_id) ->
+      @connected = @ide.socket.socket.connected
+      @joined = false
+      @wantToBeJoined = false
+      @_checkConsistency = _.bind(@_checkConsistency, @)
+      @inconsistentCount = 0
+      @_bindToEditorEvents()
+      @_bindToSocketEvents()
 
-		detachFromAce: () ->
-			@doc?.detachFromAce()
-			editorDoc = @ace?.getSession().getDocument()
-			editorDoc?.off "change", @_checkConsistency
+    attachToAce: (@ace) ->
+      @doc?.attachToAce(@ace)
+      editorDoc = @ace.getSession().getDocument()
+      editorDoc.on "change", @_checkConsistency
 
-		_checkConsistency: () ->
-			# We've been seeing a lot of errors when I think there shouldn't be
-			# any, which may be related to this check happening before the change is
-			# applied. If we use a timeout, hopefully we can reduce this.
-			setTimeout () =>
-				editorValue = @ace?.getValue()
-				sharejsValue = @doc?.getSnapshot()
-				if editorValue != sharejsValue
-					@inconsistentCount++
-				else
-					@inconsistentCount = 0
+    detachFromAce: () ->
+      @doc?.detachFromAce()
+      editorDoc = @ace?.getSession().getDocument()
+      editorDoc?.off "change", @_checkConsistency
 
-				if @inconsistentCount >= 3
-					@_onError new Error("Editor text does not match server text")
-			, 0
+    _checkConsistency: () ->
+      # We've been seeing a lot of errors when I think there shouldn't be
+      # any, which may be related to this check happening before the change is
+      # applied. If we use a timeout, hopefully we can reduce this.
+      setTimeout () =>
+        editorValue = @ace?.getValue()
+        sharejsValue = @doc?.getSnapshot()
+        if editorValue != sharejsValue
+          @inconsistentCount++
+        else
+          @inconsistentCount = 0
 
-		getSnapshot: () ->
-			@doc?.getSnapshot()
+        if @inconsistentCount >= 3
+          @_onError new Error("Editor text does not match server text")
+      , 0
 
-		getType: () ->
-			@doc?.getType()
+    getSnapshot: () ->
+      @doc?.getSnapshot()
 
-		getInflightOp: () ->
-			@doc?.getInflightOp()
+    getType: () ->
+      @doc?.getType()
 
-		getPendingOp: () ->
-			@doc?.getPendingOp()
+    getInflightOp: () ->
+      @doc?.getInflightOp()
 
-		hasBufferedOps: () ->
-			@doc?.hasBufferedOps()
+    getPendingOp: () ->
+      @doc?.getPendingOp()
 
-		_bindToSocketEvents: () ->
-			@_onUpdateAppliedHandler = (update) => @_onUpdateApplied(update)
-			@ide.socket.on "otUpdateApplied", @_onUpdateAppliedHandler
-			@_onErrorHandler = (error, update) => @_onError(error, update)
-			@ide.socket.on "otUpdateError", @_onErrorHandler
-			@_onDisconnectHandler = (error) => @_onDisconnect(error)
-			@ide.socket.on "disconnect", @_onDisconnectHandler
+    hasBufferedOps: () ->
+      @doc?.hasBufferedOps()
 
-		_bindToEditorEvents: () ->
-			onReconnectHandler = (update) =>
-				@_onReconnect(update)
-			@_unsubscribeReconnectHandler = @ide.$scope.$on "project:joined", onReconnectHandler
+    _bindToSocketEvents: () ->
+      @_onUpdateAppliedHandler = (update) => @_onUpdateApplied(update)
+      @ide.socket.on "otUpdateApplied", @_onUpdateAppliedHandler
+      @_onErrorHandler = (error, update) => @_onError(error, update)
+      @ide.socket.on "otUpdateError", @_onErrorHandler
+      @_onDisconnectHandler = (error) => @_onDisconnect(error)
+      @ide.socket.on "disconnect", @_onDisconnectHandler
 
-		_unBindFromEditorEvents: () ->
-			@_unsubscribeReconnectHandler()
+    _bindToEditorEvents: () ->
+      onReconnectHandler = (update) =>
+        @_onReconnect(update)
+      @_unsubscribeReconnectHandler = @ide.$scope.$on "project:joined", onReconnectHandler
 
-		_unBindFromSocketEvents: () ->
-			@ide.socket.removeListener "otUpdateApplied", @_onUpdateAppliedHandler
-			@ide.socket.removeListener "otUpdateError", @_onErrorHandler
-			@ide.socket.removeListener "disconnect", @_onDisconnectHandler
+    _unBindFromEditorEvents: () ->
+      @_unsubscribeReconnectHandler()
 
-		leaveAndCleanUp: () ->
-			@leave (error) =>
-				@_cleanUp()
+    _unBindFromSocketEvents: () ->
+      @ide.socket.removeListener "otUpdateApplied", @_onUpdateAppliedHandler
+      @ide.socket.removeListener "otUpdateError", @_onErrorHandler
+      @ide.socket.removeListener "disconnect", @_onDisconnectHandler
 
-		join: (callback = (error) ->) ->
-			@wantToBeJoined = true
-			@_cancelLeave()
-			if @connected
-				return @_joinDoc callback
-			else
-				@_joinDocOffline callback
+    leaveAndCleanUp: () ->
+      @leave (error) =>
+        @_cleanUp()
 
-		leave: (callback = (error) ->) =>
-			@wantToBeJoined = false
-			@_cancelJoin()
+    join: (callback = (error) ->) ->
+      @wantToBeJoined = true
+      @_cancelLeave()
+      if @connected
+        return @_joinDoc callback
+      else
+        @_joinDocOffline callback
 
-			if @doc?
-				@wantToBeJoined = false
-				@_cancelJoin()
-				if (@doc? and @doc.hasBufferedOps())
-					@_leaveCallbacks ||= []
-					@_leaveCallbacks.push callback
-				else if !@connected
-					callback()
-				else
-					@_leaveDoc(callback)
+    leave: (callback = (error) ->) =>
+      @wantToBeJoined = false
+      @_cancelJoin()
 
-		pollSavedStatus: () ->
-			# returns false if doc has ops waiting to be acknowledged or
-			# sent that haven't changed since the last time we checked.
-			# Otherwise returns true.
-			inflightOp = @getInflightOp()
-			pendingOp = @getPendingOp()
-			if !inflightOp? and !pendingOp?
-				# there's nothing going on
-				saved = true
-			else if inflightOp == @oldInflightOp
-				saved = false
-			else if pendingOp?
-				saved = false
-			else
-				saved = true
+      if @doc?
+        OfflineStoreManager.initdb()
+        OfflineStoreManager.cacheDocument this
+        if @doc.hasBufferedOps()
+          if @connected
+            @_leaveCallbacks ||= []
+            @_leaveCallbacks.push callback
+          else
+            for op in @doc.getInflightOp
+              OfflineStoreManager.applyOtUpdate @docId op
 
-			@oldInflightOp = inflightOp
-			return saved
+            for op in @doc.getPendingOp
+              OfflineStoreManager.applyOtUpdate @docId op
+      else
+        @_leaveDoc(callback)
 
-		_cancelLeave: () ->
-			if @_leaveCallbacks?
-				delete @_leaveCallbacks
+    pollSavedStatus: () ->
+      # returns false if doc has ops waiting to be acknowledged or
+      # sent that haven't changed since the last time we checked.
+      # Otherwise returns true.
+      inflightOp = @getInflightOp()
+      pendingOp = @getPendingOp()
+      if !inflightOp? and !pendingOp?
+        # there's nothing going on
+        saved = true
+      else if inflightOp == @oldInflightOp
+        saved = false
+      else if pendingOp?
+        saved = false
+      else
+        saved = true
 
-		_cancelJoin: () ->
-			if @_joinCallbacks?
-				delete @_joinCallbacks
+      @oldInflightOp = inflightOp
+      return saved
 
-		_onUpdateApplied: (update) ->
-			@ide.pushEvent "received-update",
-				doc_id: @doc_id
-				remote_doc_id: update?.doc
-				wantToBeJoined: @wantToBeJoined
-				update: update
+    _cancelLeave: () ->
+      if @_leaveCallbacks?
+        delete @_leaveCallbacks
 
-			if Math.random() < (@ide.disconnectRate or 0)
-				console.log "Simulating disconnect"
-				@ide.connectionManager.disconnect()
-				return
+    _cancelJoin: () ->
+      if @_joinCallbacks?
+        delete @_joinCallbacks
 
-			if Math.random() < (@ide.ignoreRate or 0)
-				console.log "Simulating lost update"
-				return
+    _onUpdateApplied: (update) ->
+      @ide.pushEvent "received-update",
+        doc_id: @doc_id
+        remote_doc_id: update?.doc
+        wantToBeJoined: @wantToBeJoined
+        update: update
 
-			if update?.doc == @doc_id and @doc?
-				@doc.processUpdateFromServer update
+      if Math.random() < (@ide.disconnectRate or 0)
+        console.log "Simulating disconnect"
+        @ide.connectionManager.disconnect()
+        return
 
-				if !@wantToBeJoined
-					@leave()
+      if Math.random() < (@ide.ignoreRate or 0)
+        console.log "Simulating lost update"
+        return
 
-		_onDisconnect: () ->
-			@connected = false
-			@joined = false
-			@doc?.updateConnectionState "disconnected"
+      if update?.doc == @doc_id and @doc?
+        @doc.processUpdateFromServer update
 
-		_onReconnect: () ->
-			@ide.pushEvent "reconnected:afterJoinProject"
+        if !@wantToBeJoined
+          @leave()
 
-			@connected = true
-			if @wantToBeJoined or @doc?.hasBufferedOps()
-				@_joinDoc (error) =>
-					return @_onError(error) if error?
-					@doc.updateConnectionState "ok"
-					@doc.flushPendingOps()
-					@_callJoinCallbacks()
+    _onDisconnect: () ->
+      @connected = false
+      @joined = false
+      @doc?.updateConnectionState "disconnected"
 
-		_callJoinCallbacks: () ->
-			for callback in @_joinCallbacks or []
-				callback()
-			delete @_joinCallbacks
+    _onReconnect: () ->
+      @ide.pushEvent "reconnected:afterJoinProject"
 
-		_joinUpdatedDocCallback: (callback = (error) ->) ->
-			(error, docLines, version, updates) =>
-				return callback(error) if error?
-				@joined = true
-				@doc.catchUp( updates )
-				callback()
-				
-		_joinNewDocCallback: (callback = (error) ->) ->
-			(error, docLines, version) =>
-				return callback(error) if error?
-				@joined = true
-				@doc = new ShareJsDoc @doc_id, docLines, version, @ide.socket
-				@_bindToShareJsDocEvents()
-				@ide.pushEvent "doc:init", this
-				callback()
+      @connected = true
+      if @wantToBeJoined or @doc?.hasBufferedOps()
+        @_joinDoc (error) =>
+          return @_onError(error) if error?
+          @doc.updateConnectionState "ok"
+          @doc.flushPendingOps()
+          @_callJoinCallbacks()
 
-		# called when connected
-		# for offline joining, see _joinDocOffline
-		_joinDoc: (callback = (error) ->) ->
-			if @doc?
-				@ide.socket.emit 'joinDoc', @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
-			else
-				@ide.socket.emit 'joinDoc', @doc_id, @_joinNewDocCallback(callback)
+    _callJoinCallbacks: () ->
+      for callback in @_joinCallbacks or []
+        callback()
+      delete @_joinCallbacks
 
-		# called when disconnected
-		# for online joining, see _joinDoc		
-		_joinDocOffline: (callback = (error) ->) ->
-			if @doc?
-				OfflineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
-			else
-				OfflineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
-				
+    _joinUpdatedDocCallback: (callback = (error) ->) ->
+      (error, docLines, version, updates) =>
+        return callback(error) if error?
+        @joined = true
+        @doc.catchUp( updates )
+        callback()
+
+    _joinNewDocCallback: (callback = (error) ->) ->
+      (error, docLines, version) =>
+        return callback(error) if error?
+        @joined = true
+        @doc = new ShareJsDoc @doc_id, docLines, version, @ide.socket
+        @_bindToShareJsDocEvents()
+        callback()
+
+    # called when connected
+    # for offline joining, see _joinDocOffline
+    _joinDoc: (callback = (error) ->) ->
+      if @doc?
+        @ide.socket.emit 'joinDoc', @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
+      else
+        @ide.socket.emit 'joinDoc', @doc_id, @_joinNewDocCallback(callback)
+
+    # called when disconnected
+    # for online joining, see _joinDoc
+    _joinDocOffline: (callback = (error) ->) ->
+      if @doc?
+        OfflineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
+      else
+        OfflineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
 
 
-		_leaveDoc: (callback = (error) ->) ->
-			@ide.socket.emit 'leaveDoc', @doc_id, (error) =>
-				return callback(error) if error?
-				@joined = false
-				for callback in @_leaveCallbacks or []
-					callback(error)
-				delete @_leaveCallbacks
-				callback(error)
 
-		_cleanUp: () ->
-			delete Document.openDocs[@doc_id]
-			@_unBindFromEditorEvents()
-			@_unBindFromSocketEvents()
+    _leaveDoc: (callback = (error) ->) ->
+      @ide.socket.emit 'leaveDoc', @doc_id, (error) =>
+        return callback(error) if error?
+        @joined = false
+        for callback in @_leaveCallbacks or []
+          callback(error)
+        delete @_leaveCallbacks
+        callback(error)
 
-		_bindToShareJsDocEvents: () ->
-			@doc.on "error", (error, meta) => @_onError error, meta
-			@doc.on "change", (doc) =>
-				console.log "change"
-				@ide.pushEvent "doc:change", doc
-			@doc.on "externalUpdate", (update) => 
-				@ide.pushEvent "externalUpdate",
-					doc_id: @doc_id
-				@trigger "externalUpdate", update
-			@doc.on "remoteop", () => 
-				@ide.pushEvent "remoteop",
-					doc_id: @doc_id
-				@trigger "remoteop"
-			@doc.on "op:sent", (op) =>
-				@ide.pushEvent "op:sent",
-					doc_id: @doc_id
-					op: op
-				@trigger "op:sent"
-			@doc.on "op:acknowledged", (op) =>
-				@ide.pushEvent "op:acknowledged",
-					doc_id: @doc_id
-					op: op
-				@trigger "op:acknowledged"
-			@doc.on "op:timeout", (op) =>
-				@ide.pushEvent "op:timeout",
-					doc_id: @doc_id
-					op: op
-				@trigger "op:timeout"
-				ga?('send', 'event', 'error', "op timeout", "Op was now acknowledged - #{@ide.socket.socket.transport.name}" )
-				@ide.connectionManager.reconnectImmediately()
-			@doc.on "flush", (inflightOp, pendingOp, version) =>
-				@ide.pushEvent "flush",
-					doc_id: @doc_id,
-					inflightOp: inflightOp,
-					pendingOp: pendingOp
-					v: version
+    _cleanUp: () ->
+      delete Document.openDocs[@doc_id]
+      @_unBindFromEditorEvents()
+      @_unBindFromSocketEvents()
 
-		_onError: (error, meta = {}) ->
-			console.error "ShareJS error", error, meta
-			ga?('send', 'event', 'error', "shareJsError", "#{error.message} - #{@ide.socket.socket.transport.name}" )
-			@ide.socket.disconnect()
-			meta.doc_id = @doc_id
-			@ide.reportError(error, meta)
-			@doc?.clearInflightAndPendingOps()
-			@_cleanUp()
-			@trigger "error", error
+    _bindToShareJsDocEvents: () ->
+      @doc.on "error", (error, meta) => @_onError error, meta
+      @doc.on "externalUpdate", (update) =>
+        @ide.pushEvent "externalUpdate",
+          doc_id: @doc_id
+        @trigger "externalUpdate", update
+      @doc.on "remoteop", () =>
+        @ide.pushEvent "remoteop",
+          doc_id: @doc_id
+        @trigger "remoteop"
+      @doc.on "op:sent", (op) =>
+        @ide.pushEvent "op:sent",
+          doc_id: @doc_id
+          op: op
+        @trigger "op:sent"
+      @doc.on "op:acknowledged", (op) =>
+        @ide.pushEvent "op:acknowledged",
+          doc_id: @doc_id
+          op: op
+        @trigger "op:acknowledged"
+      @doc.on "op:timeout", (op) =>
+        @ide.pushEvent "op:timeout",
+          doc_id: @doc_id
+          op: op
+        @trigger "op:timeout"
+        ga?('send', 'event', 'error', "op timeout", "Op was now acknowledged - #{@ide.socket.socket.transport.name}" )
+        @ide.connectionManager.reconnectImmediately()
+      @doc.on "flush", (inflightOp, pendingOp, version) =>
+        @ide.pushEvent "flush",
+          doc_id: @doc_id,
+          inflightOp: inflightOp,
+          pendingOp: pendingOp
+          v: version
+
+    _onError: (error, meta = {}) ->
+      console.error "ShareJS error", error, meta
+      ga?('send', 'event', 'error', "shareJsError", "#{error.message} - #{@ide.socket.socket.transport.name}" )
+      @ide.socket.disconnect()
+      meta.doc_id = @doc_id
+      @ide.reportError(error, meta)
+      @doc?.clearInflightAndPendingOps()
+      @_cleanUp()
+      @trigger "error", error
