@@ -142,4 +142,6 @@ define [
 			else
 				$scope.darkTheme = false
 
+		OfflineStoreManager.init ide
+
 	angular.bootstrap(document.body, ["SharelatexApp"])

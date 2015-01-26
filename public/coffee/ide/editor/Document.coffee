@@ -103,19 +103,15 @@ define [
 			@_cancelJoin()
 
 			if @doc?
-				OfflineStoreManager.cacheDocument this
-				if @doc.hasBufferedOps()
-					if @connected
-						@_leaveCallbacks ||= []
-						@_leaveCallbacks.push callback
-					else
-						for op in @doc.getInflightOp
-							OfflineStoreManager.applyOtUpdate @docId op
-
-						for op in @doc.getPendingOp
-							OfflineStoreManager.applyOtUpdate @docId op
-			else
-				@_leaveDoc(callback)
+				@wantToBeJoined = false
+				@_cancelJoin()
+				if (@doc? and @doc.hasBufferedOps())
+					@_leaveCallbacks ||= []
+					@_leaveCallbacks.push callback
+				else if !@connected
+					callback()
+				else
+					@_leaveDoc(callback)
 
 		pollSavedStatus: () ->
 			# returns false if doc has ops waiting to be acknowledged or
@@ -200,6 +196,7 @@ define [
 				@joined = true
 				@doc = new ShareJsDoc @doc_id, docLines, version, @ide.socket
 				@_bindToShareJsDocEvents()
+				@ide.pushEvent "doc:init", this
 				callback()
 
 		# called when connected
@@ -236,6 +233,9 @@ define [
 
 		_bindToShareJsDocEvents: () ->
 			@doc.on "error", (error, meta) => @_onError error, meta
+			@doc.on "change", (doc) =>
+				console.log "change"
+				@ide.pushEvent "doc:change", doc
 			@doc.on "externalUpdate", (update) => 
 				@ide.pushEvent "externalUpdate",
 					doc_id: @doc_id

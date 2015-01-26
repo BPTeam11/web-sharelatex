@@ -6,7 +6,22 @@ define () ->
 		@ide = null
 		@cache = []
 
-		@cacheDocument: (doc) ->
+		@init: (ide) =>
+			@ide = ide
+			@ide.$scope.$on "doc:init", @onDocInit
+			@ide.$scope.$on "doc:change", @onDocChange
+
+		@onDocInit: (doc) =>
+			console.log "onDocInit"
+			console.log doc
+			@cacheDocument doc
+
+		@onDocChange: (doc) =>
+			console.log "onDocChange"
+			console.log doc
+			@cacheDocument doc
+
+		@cacheDocument: (doc) =>
 			@cache[doc.docId] = doc
 
 		@joinNewDoc: (id, callback = (error, doclines, version) ->) ->
