@@ -4,8 +4,8 @@ define [], () ->
 
 	class OfflineStoreManager
 		constructor: (@ide) ->
-		@cache = {}
-		@createdDocCache = {}
+			@cache = {}
+			@createdDocCache = {}
 
 		cacheDocument: (doc) =>
 			@cache[doc.doc_id] = doc
