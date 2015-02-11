@@ -9,6 +9,7 @@ define [
 	"ide/pdf/PdfManager"
 	"ide/binary-files/BinaryFilesManager"
 	"ide/offline-store/OfflineStoreManager"
+	"ide/offline-store/IndexedDbManager"
 	"ide/settings/index"
 	"ide/share/index"
 	"ide/chat/index"
@@ -40,6 +41,7 @@ define [
 	PdfManager
 	BinaryFilesManager
 	OfflineStoreManager
+	IndexedDbManager
 ) ->
 
 	App.controller "IdeController", ($scope, $timeout, ide) ->
@@ -74,6 +76,8 @@ define [
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
 
+		ide.indexedDbManager = new IndexedDbManager
+		ide.offlineStoreManager = new OfflineStoreManager ide
 
 		try 
 			ide.connectionManager = new ConnectionManager(ide, $scope)
@@ -98,7 +102,7 @@ define [
 				socket : {connected : false}
 			#dummy project:
 			
-			OfflineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
+			ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
 				$scope.project = project
 
 			#tell everybody that we joined a project:
@@ -141,7 +145,5 @@ define [
 				$scope.darkTheme = true
 			else
 				$scope.darkTheme = false
-
-		OfflineStoreManager.init ide
 
 	angular.bootstrap(document.body, ["SharelatexApp"])

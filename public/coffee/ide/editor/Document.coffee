@@ -1,8 +1,7 @@
 define [
   "utils/EventEmitter"
   "ide/editor/ShareJsDoc"
-  "ide/offline-store/OfflineStoreManager"
-], (EventEmitter, ShareJsDoc, OfflineStoreManager) ->
+], (EventEmitter, ShareJsDoc) ->
 
   class Document extends EventEmitter
     @getDocument: (ide, doc_id) ->
@@ -104,18 +103,17 @@ define [
       @_cancelJoin()
 
       if @doc?
-        OfflineStoreManager.initdb()
-        OfflineStoreManager.cacheDocument this
+        @ide.offlineStoreManager.cacheDocument this
         if @doc.hasBufferedOps()
           if @connected
             @_leaveCallbacks ||= []
             @_leaveCallbacks.push callback
           else
             for op in @doc.getInflightOp
-              OfflineStoreManager.applyOtUpdate @docId op
+              @ide.offlineStoreManager.applyOtUpdate @docId op
 
             for op in @doc.getPendingOp
-              OfflineStoreManager.applyOtUpdate @docId op
+              @ide.offlineStoreManager.applyOtUpdate @docId op
       else
         @_leaveDoc(callback)
 
@@ -216,9 +214,9 @@ define [
     # for online joining, see _joinDoc
     _joinDocOffline: (callback = (error) ->) ->
       if @doc?
-        OfflineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
+        @ide.offlineStoreManager.joinUpdatedDoc @doc_id, @doc.getVersion(), @_joinUpdatedDocCallback(callback)
       else
-        OfflineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
+        @ide.offlineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
 
 
 
@@ -238,6 +236,9 @@ define [
 
     _bindToShareJsDocEvents: () ->
       @doc.on "error", (error, meta) => @_onError error, meta
+      @doc.on "change", (operation) =>
+      	if !@connected
+      		@ide.$scope.$emit "offline:doc:change", this
       @doc.on "externalUpdate", (update) =>
         @ide.pushEvent "externalUpdate",
           doc_id: @doc_id

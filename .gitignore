@@ -48,6 +48,8 @@ requestQueueWorker.js
 TpdsWorker.js
 BackgroundJobsWorker.js
 
+public/js/test.js
+public/test.html
 public/js/history/versiondetail.js
 !public/js/libs/
 public/js/*
