@@ -8,11 +8,43 @@ define () ->
 
 	class OfflineStoreManager
 		constructor: (@ide) ->
-			@ide.$scope.$on "offline:doc:change", (event, arg) ->
+			@lastPendingOp = -1
+			@ide.$scope.$on "offline:doc:change", (event, doc) =>
 				console.log "ide event: offline:doc:change"
-				console.log arg.getInflightOp()
-				console.log arg.getPendingOp()
+				pendingOps = doc.getPendingOp()
+				console.log pendingOps
+				
+				if @lastPendingOp == -1
+					@lastPendingOp = 0
+				
+				# pendingOps[0...@lastPendingOp] are already stored
+				
+				for i in [@lastPendingOp ... pendingOps.length]
+					@ide.indexedDbManager.put "offlineChanges", {id: i, op: pendingOps[i]}, (res, err) ->
+						if(err?) then console.log err
+				
+				@lastPendingOp = pendingOps.length - 1
+				
+			@ide.socket.on "connect", () =>
+				console.log "connect"
+				if @lastPendingOp >= 0
+					@uploadOfflineChanges()
 
+		uploadOfflineChanges: () =>
+			# TODO
+			@ide.indexedDbManager.openCursor "offlineChanges", (cursor, err) =>
+				if err?
+					console.log "Error looking up offline changes: #{err}"
+				else
+					console.log "\"Uploading\" offline changes:"
+					if cursor
+						console.log cursor.value
+						cursor.continue()
+					else
+						@lastPendingOp = -1
+						@ide.indexedDbManager.clear "offlineChanges", (err) ->
+							if err? then console.log "Failed to clear offlineChanges: #{err}"
+			
 		cacheDocument: (doc) =>
 			@ide.indexedDbManager.put(
 				"doc"

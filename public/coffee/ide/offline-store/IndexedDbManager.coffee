@@ -22,6 +22,8 @@ define [], () ->
 				store = @db.createObjectStore "doc", keyPath: "doc_id"
 				docLinesIndex = store.createIndex "docLines", "docLines", unique: false
 				versionIndex = store.createIndex "version", "version", unique: false
+				
+				store = @db.createObjectStore "offlineChanges", keyPath: "id"
 					
 		flushPendingOps: () =>
 			for f in @pendingOps
@@ -69,3 +71,15 @@ define [], () ->
 				trans.oncomplete = (event) -> callback null
 				
 				trans.objectStore(store).delete(key)
+				
+		openCursor: (store, args..., callback = (cursor, error)-> ) =>
+			@readyHandler () =>
+				req = @db.transaction([store], "readonly").objectStore(store).openCursor(args...)
+				req.onerror = (event) -> callback null, event.target.errorCode
+				req.onsuccess = (event) -> callback event.target.result
+				
+		clear: (store, callback = (error)-> ) =>
+			@readyHandler () =>
+				req = @db.transaction([store], "readwrite").objectStore(store).clear()
+				req.onerror = (event) -> callback event.target.errorCode
+				req.onsuccess = (event) -> callback null

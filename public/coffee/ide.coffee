@@ -76,13 +76,13 @@ define [
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
 
-		ide.indexedDbManager = new IndexedDbManager
-		ide.offlineStoreManager = new OfflineStoreManager ide
-
+		offline = false
 		try 
 			ide.connectionManager = new ConnectionManager(ide, $scope)
 		catch error
 			console.log error
+			
+			offline = true
 			
 			#dummy connectionManager:
 			ide.connectionManager = 
@@ -100,6 +100,12 @@ define [
 				removeListener : (EventName, args...) -> 
 						console.log("Testbranch: The event: " + EventName + "was send with socket.removeListener")
 				socket : {connected : false}
+				
+				
+		ide.indexedDbManager = new IndexedDbManager
+		ide.offlineStoreManager = new OfflineStoreManager ide
+
+		if offline
 			#dummy project:
 			
 			ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
