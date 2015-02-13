@@ -8,6 +8,8 @@ define [
 	"ide/permissions/PermissionsManager"
 	"ide/pdf/PdfManager"
 	"ide/binary-files/BinaryFilesManager"
+	"ide/offline-store/OfflineStoreManager"
+	"ide/offline-store/IndexedDbManager"
 	"ide/settings/index"
 	"ide/share/index"
 	"ide/chat/index"
@@ -38,6 +40,8 @@ define [
 	PermissionsManager
 	PdfManager
 	BinaryFilesManager
+	OfflineStoreManager
+	IndexedDbManager
 ) ->
 
 	App.controller "IdeController", ($scope, $timeout, ide) ->
@@ -72,7 +76,49 @@ define [
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
 
-		ide.connectionManager = new ConnectionManager(ide, $scope)
+		offline = false
+		try 
+			ide.connectionManager = new ConnectionManager(ide, $scope)
+		catch error
+			console.log error
+			
+			offline = true
+			
+			#dummy connectionManager:
+			ide.connectionManager = 
+				disconnect : () -> console("Testbranch: connectionManager delete()")
+				reconnectImmediately : () -> console("Testbranch: connectionManager reconnectImmediately()")
+			#dummy socket:
+			ide.socket = 
+				on : (EventName, func = (a...) -> ) -> 
+					console.log("Testbranch: The event: " + EventName + "was registered by socket.on")
+				emit :  (EventName, args..., callback) -> 
+					console.log("Testbranch: The event: " + EventName + "was send with socket.emit")
+					#return the 'dummy' DocLines if the event is joinDoc
+					if(EventName == "joinDoc")
+						console.log "This should not happen!!!! We are offline, _joinDocOffline should've been called"
+				removeListener : (EventName, args...) -> 
+						console.log("Testbranch: The event: " + EventName + "was send with socket.removeListener")
+				socket : {connected : false}
+				
+				
+		ide.indexedDbManager = new IndexedDbManager
+		ide.offlineStoreManager = new OfflineStoreManager ide
+
+		if offline
+			#dummy project:
+			
+			ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
+				$scope.project = project
+
+			#tell everybody that we joined a project:
+			#I assume (havent tested anything) the timeout is necessary because the other constructors have to be called first.
+			setTimeout(() =>
+				$scope.state.load_progress = 100
+				$scope.state.loading = false
+				$scope.$broadcast "project:joined"
+				, 100)
+
 		ide.fileTreeManager = new FileTreeManager(ide, $scope)
 		ide.editorManager = new EditorManager(ide, $scope)
 		ide.onlineUsersManager = new OnlineUsersManager(ide, $scope)

@@ -1,5 +1,6 @@
+- var useFingerprints = false
 doctype html
-html(itemscope, itemtype='http://schema.org/Product')
+html(itemscope, itemtype='http://schema.org/Product', manifest='/app.cache')
 	block vars
 
 	head
@@ -13,7 +14,11 @@ html(itemscope, itemtype='http://schema.org/Product')
 			title= translate(title) + ' - ShareLaTeX, '+translate("online_latex_editor") 
 
 		link(rel="icon", href="/favicon.ico")
-		link(rel='stylesheet', href='/stylesheets/style.css?fingerprint='+fingerprint('/stylesheets/style.css'))
+		-if (useFingerprints)
+			link(rel='stylesheet', href='/stylesheets/style.css?fingerprint='+fingerprint('/stylesheets/style.css'))
+		-else
+			link(rel='stylesheet', href='/stylesheets/style.css')
+
 		link(href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css",rel="stylesheet")
 
 		if settings.i18n.subdomainLang
@@ -166,20 +171,37 @@ html(itemscope, itemtype='http://schema.org/Product')
 			span(ng-controller="ScribtexPopupController")
 			include scribtex-modal
 
+		-if (useFingerprints)
+			- if(typeof(suppressFooter) == "undefined")
+				script(type='text/javascript').
+					window.requirejs = {
+						"urlArgs" : "fingerprint=#{fingerprint(jsPath + 'main.js')}-#{fingerprint(jsPath + 'libs.js')}",
+						"paths" : {
+							"moment": "libs/moment-2.7.0"
+						}
+					};	
+				script(
+					data-main=jsPath+'main.js',
+					baseurl=jsPath,
+					src=jsPath+'libs/require.js?fingerprint='+fingerprint(jsPath + 'libs/require.js')
+				)
+		-else
+			- if(typeof(suppressFooter) == "undefined")
+				script(type='text/javascript').
+					window.requirejs = {
+						"urlArgs" : "",
+						"paths" : {
+							"moment": "libs/moment-2.7.0"
+						}
+					};	
+				script(
+					data-main=jsPath+'main.js',
+					baseurl=jsPath,
+					src=jsPath+'libs/require.js'
+				)
 
-		- if(typeof(suppressFooter) == "undefined")
-			script(type='text/javascript').
-				window.requirejs = {
-					"urlArgs" : "fingerprint=#{fingerprint(jsPath + 'main.js')}-#{fingerprint(jsPath + 'libs.js')}",
-					"paths" : {
-						"moment": "libs/moment-2.7.0"
-					}
-				};	
-			script(
-				data-main=jsPath+'main.js',
-				baseurl=jsPath,
-				src=jsPath+'libs/require.js?fingerprint='+fingerprint(jsPath + 'libs/require.js')
-			)
+
+
 
 		- if (typeof(tenderUrl) != "undefined")
 			script(src="https://#{tenderUrl}/tender_widget.js" )

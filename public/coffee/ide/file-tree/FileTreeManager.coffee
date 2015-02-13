@@ -261,6 +261,21 @@ define [
 				_csrf: window.csrfToken
 			}
 
+
+		createDocOffline:  (name, parent_folder = @getCurrentFolder()) ->
+			@ide.offlineStoreManager.createDoc(name, parent_folder?.id, window.csrfToken)
+			# parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder
+			@$scope.$apply () =>
+				parent_folder.children.push {
+					name: name
+					id:   parent_folder.children.length + "ID" #TODO change this to be the ids the indexDb generates or another reasonable algorithm
+					type: "doc"
+				}
+				@recalculateDocList()
+
+
+
+
 		createFolder: (name, parent_folder = @getCurrentFolder()) ->
 			# We'll wait for the socket.io notification to actually
 			# add the folder for us.
