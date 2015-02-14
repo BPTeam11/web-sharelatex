@@ -103,6 +103,7 @@ define [
       @_cancelJoin()
 
       if @doc?
+        @ide.offlineStoreManager.cacheProject this
         @ide.offlineStoreManager.cacheDocument this
         if @doc.hasBufferedOps()
           if @connected
@@ -237,8 +238,8 @@ define [
     _bindToShareJsDocEvents: () ->
       @doc.on "error", (error, meta) => @_onError error, meta
       @doc.on "change", (operation) =>
-      	if !@connected
-      		@ide.$scope.$emit "offline:doc:change", this
+        if !@connected
+          @ide.$scope.$emit "offline:doc:change", this
       @doc.on "externalUpdate", (update) =>
         @ide.pushEvent "externalUpdate",
           doc_id: @doc_id
