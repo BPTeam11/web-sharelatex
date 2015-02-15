@@ -1,6 +1,6 @@
 define [], () ->
   class IndexedDbManager
-    constructor: () ->
+    constructor: (@$scope) ->
       @ready = false
       @initDb()
       @pendingOps = []
@@ -12,6 +12,7 @@ define [], () ->
         @db = event.target.result
         @ready = true
         @flushPendingOps()
+        @$scope.$emit "IndexDB:initialized"
 
       openRequest.onerror = (event) ->
         console.log "Error opening IndexedDB: #{event.target.errorCode}"

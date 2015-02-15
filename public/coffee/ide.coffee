@@ -102,7 +102,7 @@ define [
         socket : {connected : false}
 
 
-    ide.indexedDbManager = new IndexedDbManager
+    ide.indexedDbManager = new IndexedDbManager $scope
     ide.offlineStoreManager = new OfflineStoreManager ide
 
     if offline
@@ -113,11 +113,14 @@ define [
 
       #tell everybody that we joined a project:
       #I assume (havent tested anything) the timeout is necessary because the other constructors have to be called first.
-      setTimeout(() =>
-        $scope.state.load_progress = 100
-        $scope.state.loading = false
-        $scope.$broadcast "project:joined"
-        , 1100)
+      $scope.$on "IndexDB:initialized", () -> 
+        setTimeout(
+          () =>
+            console.log "DEBUG: We load offline"
+            $scope.state.load_progress = 100
+            $scope.state.loading = false
+            $scope.$broadcast "project:joined"
+          , 1000)
 
     ide.fileTreeManager = new FileTreeManager(ide, $scope)
     ide.editorManager = new EditorManager(ide, $scope)
