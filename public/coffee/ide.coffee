@@ -76,34 +76,14 @@ define [
 		ide.project_id = $scope.project_id = window.project_id
 		ide.$scope = $scope
 
-		offline = false
-		try 
-			ide.connectionManager = new ConnectionManager(ide, $scope)
-		catch error
-			console.log error
-			
-			offline = true
-			
-			#dummy connectionManager:
-			ide.connectionManager = 
-				disconnect : () -> console("Testbranch: connectionManager delete()")
-				reconnectImmediately : () -> console("Testbranch: connectionManager reconnectImmediately()")
-			#dummy socket:
-			ide.socket = 
-				on : (EventName, func = (a...) -> ) -> 
-					console.log("Testbranch: The event: " + EventName + "was registered by socket.on")
-				emit :  (EventName, args..., callback) -> 
-					console.log("Testbranch: The event: " + EventName + "was send with socket.emit")
-					#return the 'dummy' DocLines if the event is joinDoc
-					if(EventName == "joinDoc")
-						console.log "This should not happen!!!! We are offline, _joinDocOffline should've been called"
-				removeListener : (EventName, args...) -> 
-						console.log("Testbranch: The event: " + EventName + "was send with socket.removeListener")
-				socket : {connected : false}
-				
-				
+
+
+		ide.connectionManager = new ConnectionManager(ide, $scope)			
 		ide.indexedDbManager = new IndexedDbManager
 		ide.offlineStoreManager = new OfflineStoreManager ide
+
+
+		offline = false
 
 		if offline
 			#dummy project:
@@ -118,6 +98,11 @@ define [
 				$scope.state.loading = false
 				$scope.$broadcast "project:joined"
 				, 100)
+			setTimeout(
+				() =>
+					console.log "DEBUG: countdown begin"	
+					ide.connectionManager.startAutoReconnectCountdown()
+				, 10000)
 
 		ide.fileTreeManager = new FileTreeManager(ide, $scope)
 		ide.editorManager = new EditorManager(ide, $scope)
