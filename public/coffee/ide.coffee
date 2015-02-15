@@ -83,26 +83,28 @@ define [
 		ide.offlineStoreManager = new OfflineStoreManager ide
 
 
-		offline = false
-
-		if offline
-			#dummy project:
+		setTimeout(
+			() ->
+				#the condition $scope.project? ensures that if we are connected and then disconnect before the time runs out we don't load the project from IndexDB
+				if(!(ide.socket.connected?) && $scope.project?) 
+					#dummy project:
 			
-			ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
-				$scope.project = project
+					ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>		
+						$scope.project = project
 
-			#tell everybody that we joined a project:
-			#I assume (havent tested anything) the timeout is necessary because the other constructors have to be called first.
-			setTimeout(() =>
-				$scope.state.load_progress = 100
-				$scope.state.loading = false
-				$scope.$broadcast "project:joined"
-				, 100)
-			setTimeout(
-				() =>
-					console.log "DEBUG: countdown begin"	
-					ide.connectionManager.startAutoReconnectCountdown()
-				, 10000)
+					#tell everybody that we joined a project:
+					#I assume (havent tested anything) the timeout is necessary because the other constructors have to be called first.
+					setTimeout(() =>
+						$scope.state.load_progress = 100
+						$scope.state.loading = false
+						$scope.$broadcast "project:joined"
+						, 100)
+					setTimeout(
+						() =>
+							console.log "DEBUG: countdown begin"	
+							ide.connectionManager.startAutoReconnectCountdown()
+						, 10000)
+			,7000)
 
 		ide.fileTreeManager = new FileTreeManager(ide, $scope)
 		ide.editorManager = new EditorManager(ide, $scope)
