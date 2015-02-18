@@ -41,35 +41,33 @@ define () ->
     cacheDocument: (doc) =>
       @ide.indexedDbManager.put(
         "doc"
-          doclines: doc.getSnapshot()
+          doclines: doc.getSnapshot().split("\n")
           version: doc.doc.getVersion()
           doc_id: doc.doc_id
         (res, err) -> if(err?) then console.log "Error caching document: #{err}")
 
-    joinNewDoc: (id, callback = (error, doclines, version) ->) =>
-      console.log "Requested new doc #{id} offline"
-      console.log "id: #{typeof id}}"
-      callback(
-        null
-        if @cache[id]? then @cache[id].getSnapshot() else ["this document was not cached"]
-        if @cache[id]? then @cache[id].doc.getVersion() else 0)
+    joinNewDoc: (id, callback = (error, doclines, version) ->) ->
+      @ide.indexedDbManager.get "doc", id, (res, err) ->
+        if err?
+          console.log "[ERROR] Could not retrieve document from local Cache: #{err}"
+        else
+          callback(
+            null
+            if res? then res.doclines else ["Sorry, this document was not cached :(\nPlease connect to the internet."]
+            if res? then res.version else 0)
 
     joinUpdatedDoc: (id, version, callback = (error, doclines, version, updates) ->) =>
-      console.log "Requested updated doc #{id} version #{version} offline"
-      console.log "id: #{typeof id}, version: #{typeof version}"
-
       @ide.indexedDbManager.get "doc", id, (res, err) ->
         if(err?)
           console.log "Error caching document: #{err}"
         else
           callback(
             null
-            if res? then res.docLines else ["this document was not cached"]
+            if res? then res.doclines else ["this document was not cached"]
             if res? then res.version else version
             []) # There can not be updates
 
     cacheProject: (doc) ->
-      console.log "Caching project #{@ide.$scope.project._id}"
       @ide.indexedDbManager.put(
         "project"
           id: @ide.$scope.project._id
@@ -77,8 +75,6 @@ define () ->
         (res, err) -> if(err?) then console.log "Error caching project: #{err}")
 
     joinProject: (project_id, callback = (err, project, permissionsLevel, protocolVersion) ->) ->
-      console.log "Requested project project #{project_id} version offline"
-
       @ide.indexedDbManager.get "project", project_id, (project, error) ->
         if error?
           console.log "Error getting project from IndexedDB: #{error}"
@@ -90,8 +86,6 @@ define () ->
     createDoc : (name, id, csrfToken) ->
       if id?
         console.log("OfflineManager: " + name + " " + " id: " + id + " csrfToken: " + csrfToken)
-
-
 
     applyOtUpdate: (docId, update) =>
       #@cache[docId] ||= new Document @ide docId

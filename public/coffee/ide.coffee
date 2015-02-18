@@ -113,7 +113,7 @@ define [
 
       #tell everybody that we joined a project:
       #I assume (havent tested anything) the timeout is necessary because the other constructors have to be called first.
-      $scope.$on "IndexDB:initialized", () -> 
+      $scope.$on "IndexDB:initialized", () ->
         setTimeout(
           () =>
             console.log "DEBUG: We load offline"

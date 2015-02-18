@@ -219,8 +219,6 @@ define [
       else
         @ide.offlineStoreManager.joinNewDoc @doc_id, @_joinNewDocCallback(callback)
 
-
-
     _leaveDoc: (callback = (error) ->) ->
       @ide.socket.emit 'leaveDoc', @doc_id, (error) =>
         return callback(error) if error?
