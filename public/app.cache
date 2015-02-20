@@ -489,7 +489,7 @@ js/ide/pdfng/directives/pdfHighlights.js
 js/ide/pdfng/directives/pdfRenderer.js
 js/ide/pdfng/directives/pdfSpinner.js
 js/ide/pdfng/directives/pdfPage.js 
-js/ide/offline-store/OfflineStoreManager.js 
+js/ide/offline-store/OfflineStoreManager.js
 js/ide/offline-store/IndexedDbManager.js
 
 
