@@ -72,6 +72,8 @@ define () ->
         "project"
           id: @ide.$scope.project._id
           info: @ide.$scope.project
+          protocolVersion: @ide.$scope.protocolVersion
+          permissionsLevel: @ide.$scope.permissionsLevel
         (res, err) -> if(err?) then console.log "Error caching project: #{err}")
 
     joinProject: (project_id, callback = (err, project, permissionsLevel, protocolVersion) ->) ->
@@ -81,7 +83,7 @@ define () ->
         else
           console.log "Got cached project:"
           console.log project.info
-          callback(null, project.info, null, null)
+          callback(null, project.info, project.permissionsLevel, project.protocolVersion)
 
     createDoc : (name, id, csrfToken) ->
       if id?

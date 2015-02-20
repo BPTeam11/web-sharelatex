@@ -110,6 +110,8 @@ define [
 
       ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>
         $scope.project = project
+        $scope.protocolVersion = protocolVersion
+        $scope.permissionsLevel = permissionsLevel
 
       #tell everybody that we joined a project:
       #I assume (havent tested anything) the timeout is necessary because the other constructors have to be called first.
