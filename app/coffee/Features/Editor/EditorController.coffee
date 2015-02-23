@@ -208,6 +208,10 @@ module.exports = EditorController =
 			EditorRealTimeController.emitToRoom(project_id, 'reciveNewDoc', folder_id, doc, source)
 			callback(err, doc)
 
+	mergeDoc: (project_id, doc_id, fromVersion, ops, callback = (error) ->) ->
+		logger.log {project_id, doc_id}, "merging doc"
+		#TODO
+
 
 	addFile: (project_id, folder_id, fileName, path, source, callback = (error, file)->)->
 		LockManager.getLock project_id, (err)->

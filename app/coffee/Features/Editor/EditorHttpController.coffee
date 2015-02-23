@@ -46,6 +46,14 @@ module.exports = EditorHttpController =
 			return next(error) if error?
 			res.json doc
 
+	mergeDoc: (req, res, next) ->
+		project_id = req.params.Project_id
+		doc_id = req.params.doc_id
+		fromVersion = req.body.fromVersion
+		ops = req.body.ops
+		EditorController.mergeDoc project_id, doc_id, fromVersion, ops, (error) ->
+			return next(error) if error?
+
 	addFolder: (req, res, next) ->
 		project_id = req.params.Project_id
 		name = req.body.name

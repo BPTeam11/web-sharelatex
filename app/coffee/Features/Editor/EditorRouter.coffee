@@ -9,6 +9,8 @@ module.exports =
 		app.post   '/project/:Project_id/:entity_type/:entity_id/rename', SecurityManager.requestCanModifyProject, EditorHttpController.renameEntity
 		app.post   '/project/:Project_id/:entity_type/:entity_id/move', SecurityManager.requestCanModifyProject, EditorHttpController.moveEntity
 
+		app.post   '/project/:Project_id/merge/:doc_id', SecurityManager.requestCanModifyProject, EditorHttpController.mergeDoc
+
 		app.delete '/project/:Project_id/file/:entity_id', SecurityManager.requestCanModifyProject, EditorHttpController.deleteFile
 		app.delete '/project/:Project_id/doc/:entity_id', SecurityManager.requestCanModifyProject, EditorHttpController.deleteDoc
 		app.delete '/project/:Project_id/folder/:entity_id', SecurityManager.requestCanModifyProject, EditorHttpController.deleteFolder
