@@ -4,19 +4,17 @@ define () ->
       @lastPendingOp = -1
       @ide.$scope.$on "offline:doc:change", (event, doc) =>
         console.log "ide event: offline:doc:change"
-        pendingOps = doc.getPendingOp()
+        pendingOps = doc.getAndDeletePendingOp()
         console.log pendingOps
 
-        if @lastPendingOp == -1
-          @lastPendingOp = 0
+	#TODO: on reload this counter will be wrong. It should be saved, too. 
+        @lastPendingOp += 1 
 
-        # pendingOps[0...@lastPendingOp] are already stored
-
-        for i in [@lastPendingOp ... pendingOps.length]
-          @ide.indexedDbManager.put "offlineChanges", {id: i, op: pendingOps[i]}, (res, err) ->
+        for i in [0 ... pendingOps.length]
+          @ide.indexedDbManager.put "offlineChanges", {id: @lastPendingOp, op: pendingOps[i]}, (res, err) ->
             if(err?) then console.log err
 
-        @lastPendingOp = pendingOps.length - 1
+
 
       @ide.socket.on "connect", () =>
         console.log "connect"
@@ -90,9 +88,6 @@ define () ->
         console.log("OfflineManager: " + name + " " + " id: " + id + " csrfToken: " + csrfToken)
 
     applyOtUpdate: (docId, update) =>
-      #@cache[docId] ||= new Document @ide docId
-      #@cache[docId]._onUpdateApplied update
-
       console.log "applyOtUpdate"
       console.log docId
       console.log update

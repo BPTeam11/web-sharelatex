@@ -62,6 +62,9 @@ define [
     getPendingOp: () ->
       @doc?.getPendingOp()
 
+    getAndDeletePendingOp: () ->
+      @doc?.getAndDeletePendingOp()
+
     hasBufferedOps: () ->
       @doc?.hasBufferedOps()
 

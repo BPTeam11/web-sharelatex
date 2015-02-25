@@ -91,6 +91,10 @@ define [
 
 		getInflightOp: () -> @_doc.inflightOp
 		getPendingOp: () -> @_doc.pendingOp
+		getAndDeletePendingOp: () -> 
+			tmp = @_doc.pendingOp
+			@_doc.pendingOp = null #Operations may be lost here :/
+			tmp
 
 		attachToAce: (ace) -> @_doc.attach_ace(ace)
 		detachFromAce: () -> @_doc.detach_ace?()
