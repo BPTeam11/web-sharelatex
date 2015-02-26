@@ -22,19 +22,30 @@ define () ->
           @uploadOfflineChanges()
 
     uploadOfflineChanges: () =>
-      # TODO
+      opList = [];
       @ide.indexedDbManager.openCursor "offlineChanges", (cursor, err) =>
         if err?
           console.log "Error looking up offline changes: #{err}"
         else
           console.log "\"Uploading\" offline changes:"
           if cursor
-            console.log cursor.value
+            opList.push cursor.value.op
+            console.log cursor.value.op
             cursor.continue()
           else
+            upload = {
+              fromVersion: @ide.$scope.editor.sharejs_doc.doc._doc.version #TODO load the doc version from IndexDB according to the document,
+              sessionId: @ide.socket.socket.sessionid,
+              ops: opList,
+              _csrf: window.csrfToken #for security/authentication reasons
+            }
+            #TODO load the document the changes belong to and use it in the merge adress below
+            @ide.$http.post "/project/#{@ide.project_id}/merge/#{@ide.$scope.editor.sharejs_doc.doc_id}", upload
+            
             @lastPendingOp = -1
             @ide.indexedDbManager.clear "offlineChanges", (err) ->
               if err? then console.log "Failed to clear offlineChanges: #{err}"
+     
 
     cacheDocument: (doc) =>
       @ide.indexedDbManager.put(

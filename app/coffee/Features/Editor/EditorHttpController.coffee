@@ -50,8 +50,12 @@ module.exports = EditorHttpController =
 		project_id = req.params.Project_id
 		doc_id = req.params.doc_id
 		fromVersion = req.body.fromVersion
+		sessionId = req.body.sessionId
+		if req.session?.user?._id?
+			user_id = req.session.user._id
+		#TODO: else throw an error
 		ops = req.body.ops
-		EditorController.mergeDoc project_id, doc_id, fromVersion, ops, (error) ->
+		EditorController.mergeDoc project_id, doc_id, fromVersion, sessionId, user_id, ops, (error) ->
 			return next(error) if error?
 
 	addFolder: (req, res, next) ->
