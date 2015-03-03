@@ -211,7 +211,8 @@ module.exports = EditorController =
 
 	mergeDoc: (project_id, user_id, sessionId, doc, callback = (error) ->) ->
 		doc_id = doc.doc_id
-		logger.log {project_id, doc_id}, "merging doc"	
+		version = doc.version
+		logger.log {project_id, doc_id, version}, "merging doc"	
 
 		OfflineChangeHandler.computeChange project_id, user_id, sessionId, doc, (project_id, doc_id, change) =>
 

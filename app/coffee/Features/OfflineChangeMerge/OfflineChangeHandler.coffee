@@ -1,4 +1,6 @@
 ProjectEntityHandler = require('../Project/ProjectEntityHandler')
+DocumentUpdaterHandler = require('../DocumentUpdater/DocumentUpdaterHandler')
+
 
 module.exports = MergeHandler =
 	
@@ -6,7 +8,34 @@ module.exports = MergeHandler =
 
 		console.log "MergeHandler here :)"
 		console.log doc
-	
+
+		DocumentUpdaterHandler.getDocument project_id, doc.doc_id, doc.version, (err, oldDocLines, version, ops1)=>
+			DocumentUpdaterHandler.getDocument project_id, doc.doc_id, -1, (err, onlineDocLines, version, ops2)=>
+				@merge oldDocLines, doc.doclines, onlineDocLines, (mergingOps, err) -> 
+					#check if ops are empty. We do not want to upload no changes. (may even cause confusion, terror and error)
+					change = {
+						doc: doc.doc_id
+						op: mergingOps 
+						v : doc.version
+						meta : {
+							source: sessionId
+							user_id: user_id
+						}
+					}
+					console.log user_id
+					callback(project_id, doc.doc_id, change)
+
+	merge: (oldDocLines, offlineDocLines, onlineDocLines, callback = (mergingOps, err) ->) ->
+		console.log "TODO findDifferences and generate ops"
+		console.log "TODO generate OPS"
+
+
+
+
+
+
+
+
 		# doc has only the following attributes:
 		# doc.doclines
 		# doc.version
@@ -48,24 +77,7 @@ module.exports = MergeHandler =
 #     '' ],
 #  version: 324,
 #  doc_id: '54ef3c8d0d19f3820f152a94' }
-#
 
-
-		#TODO merge -> generate changes ? 
-
-		ops = [] 
-		#check if ops are empty. We do not want to upload no changes. (may even cause confusion, terror and error)
-		change = {
-			doc: doc.doc_id
-			op: ops 
-			v : doc.version
-			meta : {
-				source: sessionId
-				user_id: user_id
-			}
-		}
-		console.log user_id
-		callback(project_id, doc.doc_id, change)
 
 #This is how change must look:
 #{ doc: '54ef10d2218548d723fd9a08',
