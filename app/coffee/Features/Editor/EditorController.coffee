@@ -209,17 +209,11 @@ module.exports = EditorController =
 			EditorRealTimeController.emitToRoom(project_id, 'reciveNewDoc', folder_id, doc, source)
 			callback(err, doc)
 
-	mergeDoc: (project_id, doc_id, fromVersion, sessionId, user_id, ops, callback = (error) ->) ->
-		logger.log {project_id, doc_id}, "merging doc"
+	mergeDoc: (project_id, user_id, sessionId, doc, callback = (error) ->) ->
+		doc_id = doc.doc_id
+		logger.log {project_id, doc_id}, "merging doc"	
 
-		#This code does not work nicely. It causes Out of Sync for the client. 
-		#MergeHandler.merge project_id, doc_id, fromVersion, ops, (project_id, doc_id, docLines) =>
-		#	#This code is inspired by the file ThirdPartyDataStore/UpdateMerger.coffee and its method processDoc 
-		#	@setDoc project_id, doc_id, docLines, "Sharelatex offline Mode", (err)->
-		#		callback(err)		
-
-		#Alternative:
-		OfflineChangeHandler.computeChange project_id, doc_id, fromVersion, sessionId, user_id, ops, (project_id, doc_id, change) =>
+		OfflineChangeHandler.computeChange project_id, user_id, sessionId, doc, (project_id, doc_id, change) =>
 
 			#TODO maybe(dunno if this is a big problem): make sure the pending queue is empty so that no updates are insserted while changes are computed -> lock the queue
 			DocumentUpdaterHandler.queueChange project_id, doc_id, change, (err)  ->

@@ -13,6 +13,7 @@ define [], () ->
         @ready = true
         @flushPendingOps()
         @$scope.$emit "IndexDB:initialized"
+        console.log "IndexDB:initialized"
 
       openRequest.onerror = (event) ->
         console.log "Error opening IndexedDB: #{event.target.errorCode}"

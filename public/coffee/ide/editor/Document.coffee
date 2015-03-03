@@ -62,8 +62,8 @@ define [
     getPendingOp: () ->
       @doc?.getPendingOp()
 
-    getAndDeletePendingOp: () ->
-      @doc?.getAndDeletePendingOp()
+    deletePendingOps: () ->
+      @doc?.deletePendingOps()
 
     hasBufferedOps: () ->
       @doc?.hasBufferedOps()
@@ -112,12 +112,6 @@ define [
           if @connected
             @_leaveCallbacks ||= []
             @_leaveCallbacks.push callback
-          else
-            for op in @doc.getInflightOp
-              @ide.offlineStoreManager.applyOtUpdate @docId op
-
-            for op in @doc.getPendingOp
-              @ide.offlineStoreManager.applyOtUpdate @docId op
       else
         @_leaveDoc(callback)
 
