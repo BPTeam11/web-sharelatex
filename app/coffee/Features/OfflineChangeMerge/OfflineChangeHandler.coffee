@@ -1,16 +1,19 @@
 ProjectEntityHandler = require('../Project/ProjectEntityHandler')
 DocumentUpdaterHandler = require('../DocumentUpdater/DocumentUpdaterHandler')
-
+diff_match_patch = require("../../../lib/diff_match_patch").diff_match_patch
+dmp = new diff_match_patch()
 
 module.exports = MergeHandler =
 	
 	computeChange: (project_id, user_id, sessionId, doc, callback = (project_id, doc_id, change) ->)->
 
-		console.log "MergeHandler here :)"
-		console.log doc
+		console.log "MergeHandler here :)  Old version"
+		console.log doc.version
 
 		DocumentUpdaterHandler.getDocument project_id, doc.doc_id, doc.version, (err, oldDocLines, version, ops1)=>
 			DocumentUpdaterHandler.getDocument project_id, doc.doc_id, -1, (err, onlineDocLines, version, ops2)=>
+				console.log "This should be new version:"
+				console.log version
 				@merge oldDocLines, doc.doclines, onlineDocLines, (mergingOps, err) -> 
 					#check if ops are empty. We do not want to upload no changes. (may even cause confusion, terror and error)
 					change = {
@@ -26,11 +29,40 @@ module.exports = MergeHandler =
 					callback(project_id, doc.doc_id, change)
 
 	merge: (oldDocLines, offlineDocLines, onlineDocLines, callback = (mergingOps, err) ->) ->
+		oldDoc = oldDocLines.join('\n')
+		offlineDoc = offlineDocLines.join('\n')
+		onlineDoc = onlineDocLines.join('\n')
+		dmp.Match_Threshold = 0.1  #if this is smaller then the algorithm is more careful. For high Threshold it will also merge/override on its own even if there is a confilct.
+		patch = dmp.patch_make(oldDoc, offlineDoc)
+		result = dmp.patch_apply(patch, onlineDoc)
+
+		console.log "Infos to understand dmp. To be deleted."
+		console.log "Old Doc"
+		console.log oldDoc
+		console.log "Offline Doc"
+		console.log offlineDoc
+		console.log "Online Doc"
+		console.log onlineDoc
+		console.log "patches generated from old Doc and offline Changes"
+		console.log patch
+		console.log "List which tells patches were applied true for applied false for not applied. If the list is longer than patch (which is also a list) then curse the dmp API. (maybe setting the Match_Treshold helps..."
+		console.log result[1]
+		console.log "Online Doc with changes"
+		console.log result[0]
+
+		for thingy in patch
+			console.log thingy
+			
+
+		#The results[1] list is only useful if it is as long as the patch list
+		@convertPatchToOps result[0], patch, result[1], onlineDoc, offlineDoc, (Ops, err) -> 
+			callback(mergingOps)
+
+
+
+	convertPatchToOps: (newDoc, patch, patchIndicator, onlineDoc, offlineDoc, callback = (Ops, err) -> ) -> 
 		console.log "TODO findDifferences and generate ops"
 		console.log "TODO generate OPS"
-
-
-
 
 
 
