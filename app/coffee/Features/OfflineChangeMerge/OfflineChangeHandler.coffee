@@ -34,6 +34,7 @@ module.exports = MergeHandler =
 		onlineDoc = onlineDocLines.join('\n')
 		dmp.Match_Threshold = 0.1  #if this is smaller then the algorithm is more careful. For high Threshold it will also merge/override on its own even if there is a confilct.
 		patch = dmp.patch_make(oldDoc, offlineDoc)
+		# patch: start1 and start2 are the respective positions of changes in the two texts
 		result = dmp.patch_apply(patch, onlineDoc)
 
 		console.log "Infos to understand dmp. To be deleted."
@@ -61,18 +62,33 @@ module.exports = MergeHandler =
 
 
 	convertPatchToOps: (newDoc, patch, patchIndicator, onlineDoc, offlineDoc, callback = (Ops, err) -> ) -> 
-		console.log "TODO findDifferences and generate ops"
-		console.log "TODO generate OPS"
+		console.log "Converting patch to operations"
+		mergingOps = []
+		for change in patch
+			offset = 0
+			for diff in change.diffs
+				switch diff[0]
+					when 0 # context
+						offset += diff[1].length
+
+					when 1 # insert
+						mergingOps.push { p: change.start2 + offset, i: diff[1] }
+						offset += diff[1].length
+
+					when -1 # delete
+						mergingOps.push { p: change.start2 + offset, d: diff[1] }
+						offset -= diff[1].length
+		console.log mergingOps
+		callback(mergingOps, null)
 
 
 
+# doc has only the following attributes:
+# doc.doclines
+# doc.version
+# doc.doc_id
+#example:
 
-
-		# doc has only the following attributes:
-		# doc.doclines
-		# doc.version
-		# doc.doc_id
-		#example:
 #{ doclines: 
 #   [ '\\documentclass{article}',
 #     '\\usepackage[utf8]{inputenc}',
