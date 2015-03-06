@@ -56,13 +56,15 @@ module.exports = MergeHandler =
 			
 
 		#The results[1] list is only useful if it is as long as the patch list
-		@convertPatchToOps result[0], patch, result[1], onlineDoc, offlineDoc, (Ops, err) -> 
-			callback(mergingOps)
+		@convertPatchToOps patch, (ops, err) -> callback(ops)
 
 
 
-	convertPatchToOps: (newDoc, patch, patchIndicator, onlineDoc, offlineDoc, callback = (Ops, err) -> ) -> 
+	convertPatchToOps: (patch, callback = (ops, err) -> ) -> 
 		console.log "Converting patch to operations"
+		console.log "Got patch:"
+		for thingy in patch
+			console.log thingy
 		mergingOps = []
 		for change in patch
 			offset = 0
@@ -77,7 +79,7 @@ module.exports = MergeHandler =
 
 					when -1 # delete
 						mergingOps.push { p: change.start2 + offset, d: diff[1] }
-						offset -= diff[1].length
+		console.log "Calculated Ops:"
 		console.log mergingOps
 		callback(mergingOps, null)
 
