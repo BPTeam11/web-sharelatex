@@ -12,19 +12,6 @@ describe "convertPatchToOps", ->
       "../Project/ProjectEntityHandler": @ProjectEntityHandler = {},
       "../DocumentUpdater/DocumentUpdaterHandler": @DocumentUpdaterHandler = {}
     @callback = sinon.spy()
-    @patch = [{
-      diffs: [
-        [ 0, 'abc' ],
-        [ -1, 'z' ],
-        [ 0, 'def' ],
-        [ 1, 'g' ],
-        [ 0, 'hij' ]
-        ],
-      start1: 666,
-      start2: 666,
-      length1: 42,
-      length2: 41
-      }]
 
   describe "when the patch is empty", ->
     beforeEach ->
@@ -34,23 +21,6 @@ describe "convertPatchToOps", ->
     it "should return no ops", ->
       @callback.calledWithExactly([], null).should.equal true
 
-  describe "when the patch contains no changes", ->
-    beforeEach ->
-      @patch = [{
-        diffs: [
-          [ 0, 'abc' ],
-          [ 0, 'def' ]
-          ],
-        start1: 666,
-        start2: 666,
-        length1: 42,
-        length2: 41
-        }]
-      @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
-  
-    it "should return no ops", ->
-      @callback.calledWithExactly([], null).should.equal true
-  
   describe "when the patch contains one change", ->
     describe "when the change contains two inserts", ->
       beforeEach ->
@@ -64,8 +34,8 @@ describe "convertPatchToOps", ->
             ],
           start1: 0,
           start2: 0,
-          length1: 10,
-          length2: 10
+          length1: 9,
+          length2: 11
           }]
         #console.log @patch
         @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
@@ -86,8 +56,8 @@ describe "convertPatchToOps", ->
             ],
           start1: 0,
           start2: 0,
-          length1: 10,
-          length2: 10
+          length1: 11,
+          length2: 9
           }]
         #console.log @patch
         @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
@@ -97,40 +67,41 @@ describe "convertPatchToOps", ->
           .should.equal true
 
   describe "when the patch contains two interconnected changes", ->
+    #oldDocText = "Once there was a ship, on which it was very freezy, so that is why this boat was being called 'goat'"
+    #offlineDocText = "Once there was a boat, on which it was quite cold, so was this boat called 'goat'"
+    #onlineDocText = "I love pizza!"
     beforeEach ->
         @patch = [{
           diffs: [
-            [ 0, 'abc' ],
-            [ 1, 'z' ],
-            [ 0, 'def' ],
-            [ 1, 'g' ],
-            [ 0, 'hij' ]
+            [ 0, 's a ' ],
+            [ -1, 'ship' ],
+            [ 1, 'boat' ],
+            [ 0, ', on' ]
             ],
-          start1: 0,
-          start2: 0,
-          length1: 10,
-          length2: 10
+          start1: 13,
+          start2: 13,
+          length1: 12,
+          length2: 12
           }, {
           diffs: [
-            [ 0, 'abcz' ],
-            [ 1, 'y' ],
-            [ 0, 'def' ],
-            [ -1, 'g' ],
-            [ 0, 'hij' ]
+            [ 0, 'was ' ],
+            [ -1, 'very freezy, so that is why this boat was being' ],
+            [ 1, 'quite cold, so was this boat' ],
+            [ 0, ' cal' ]
             ],
-          start1: 0,
-          start2: 0,
-          length1: 10,
-          length2: 10
+          start1: 35,
+          start2: 35,
+          length1: 55,
+          length2: 36
           }]
         #console.log @patch
         @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
     
-      it "should return all operations from both changes", ->
+      it "should return the right operations from both changes", ->
         @callback.calledWithExactly([
-          { p: 3, i: 'z' },
-          { p: 7, i: 'g' },
-          { p: 4, i: 'y' },
-          { p: 8, d: 'g' }], null)
-          .should.equal true
+          { p: 17, d: 'ship' },
+          { p: 17, i: 'boat' },
+          { p: 39, d: 'very freezy, so that is why this boat was being' },
+          { p: 39, i: 'quite cold, so was this boat' }
+          ], null).should.equal true
           
