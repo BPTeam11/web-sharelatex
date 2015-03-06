@@ -49,12 +49,12 @@ describe "OfflineChangeHandler", ->
           'length1': 16,
           'length2': 20 } ]
 
-        @patchIndicator = [ true]
+        @patchIndicator = [ true ]
         @OfflineChangeHandler.merge(@oldText, @offlineText, @onlineText, @callback)
 
       it "should return the offline document", ->
-        #This only tests for the resulting document to equal the offlineText
-        #because patches were not recognised as equal even when they were.
+        # This only tests for the resulting document to equal the offlineText
+        # because patches were not recognised as equal even when they were.
         @OfflineChangeHandler.convertPatchToOps
           .calledWithMatch(@offlineText)
           .should.equal true

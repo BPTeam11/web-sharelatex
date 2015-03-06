@@ -26,8 +26,11 @@ module.exports = OfflineChangeHandler =
         console.log user_id
         callback(project_id, doc.doc_id, change)
 
-
-  getDocumentText: (project_id, doc_id, version, callback = (oldDocText, onlineDocText, onlinVersion) -> ) ->
+  # returns a given document at a previous version
+  # this version of the document should be common to all participating clients,
+  # thus it will usually be the version *before* a client went offline.
+  # It is the clients responsibility to provide this version number when coming back.
+  getDocumentText: (project_id, doc_id, version, callback = (oldDocText, onlineDocText, onlineVersion) -> ) ->
     @fetchDocuments project_id, doc_id, version, (onlineDocLines, opsOld, onlineVersion) =>
       oldDocText = onlineDocLines.join('\n')
       onlineDocText = onlineDocLines.join('\n')
@@ -44,9 +47,9 @@ module.exports = OfflineChangeHandler =
   fetchDocuments: (project_id, doc_id, version, callback = (onlineDocLines, opsOld, onlineVersion) -> ) ->
     DocumentUpdaterHandler.getDocument project_id, doc_id, version, (err, temp, version1, opsOld)->
       DocumentUpdaterHandler.getDocument project_id, doc_id, -1, (err, onlineDocLines, onlineVersion, opsNew)->
-        console.log "This should be new version:"
+        console.log "This should be the new version:"
         console.log version
-        console.log "ops of old versionen"
+        console.log "ops of old versions"
         console.log opsOld
         for diff in opsOld
           console.log diff.op
