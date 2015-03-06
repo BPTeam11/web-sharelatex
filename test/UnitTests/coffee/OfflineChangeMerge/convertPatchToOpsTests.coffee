@@ -51,82 +51,86 @@ describe "convertPatchToOps", ->
     it "should return no ops", ->
       @callback.calledWithExactly([], null).should.equal true
   
+  describe "when the patch contains one change", ->
+    describe "when the change contains two inserts", ->
+      beforeEach ->
+        @patch = [{
+          diffs: [
+            [ 0, 'abc' ],
+            [ 1, 'z' ],
+            [ 0, 'def' ],
+            [ 1, 'g' ],
+            [ 0, 'hij' ]
+            ],
+          start1: 0,
+          start2: 0,
+          length1: 10,
+          length2: 10
+          }]
+        #console.log @patch
+        @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
+    
+      it "should return the right insert ops", ->
+        @callback.calledWithExactly([ { p: 3, i: 'z' }, { p: 7, i: 'g' } ], null)
+          .should.equal true
 
-  describe "when the patch contains one insert", ->
+    describe "when the change contains two deletes", ->
+      beforeEach ->
+        @patch = [{
+          diffs: [
+            [ 0, 'abc' ],
+            [ -1, 'z' ],
+            [ 0, 'def' ],
+            [ -1, 'g' ],
+            [ 0, 'hij' ]
+            ],
+          start1: 0,
+          start2: 0,
+          length1: 10,
+          length2: 10
+          }]
+        #console.log @patch
+        @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
+    
+      it "should return the right delete ops", ->
+        @callback.calledWithExactly([ { p: 3, d: 'z' }, { p: 6, d: 'g' } ], null)
+          .should.equal true
+
+  describe "when the patch contains two interconnected changes", ->
     beforeEach ->
-      @patch = [ {
-        diffs: [
-          [ 0, 'abcd' ],
-          [ 1, '  ' ],
-          [ 0, 'efgh' ]],
-        start1: 0,
-        start2: 0,
-        length1: 8,
-        length2: 10 } ]
-      @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
-
-    it "should return the right insert op", ->
-      #console.log @callback.lastCall
-      @callback.calledWithExactly([{p:4 , i:'  '}], null).should.equal true
-
-  describe "when the patch contains two inserts", ->
-    beforeEach ->
-      @patch = [{
-        diffs: [
-          [ 0, 'abc' ],
-          [ 1, 'z' ],
-          [ 0, 'def' ],
-          [ 1, 'g' ],
-          [ 0, 'hij' ]
-          ],
-        start1: 666,
-        start2: 666,
-        length1: 42,
-        length2: 41
-        }]
-      #console.log @patch
-      @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
-  
-    it "should return the right insert ops", ->
-      @callback.calledWithExactly([ { p: 669, i: 'z' }, { p: 673, i: 'g' } ], null)
-        .should.equal true
-
-  describe "when one delete patch is applied", ->
-    beforeEach ->
-      @patch = [ {
-        diffs: [
-          [ 0, 'abcd' ],
-          [ -1, '  ' ],
-          [ 0, 'efgh' ]
-          ],
-        start1: 0,
-        start2: 0,
-        length1: 10,
-        length2: 8 } ]
-      @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
-
-    it "should return the right delete op", ->
-      #console.log @callback.lastCall
-      @callback.calledWithExactly([{p:4 , d:'  '}], null).should.equal true
-
-  describe "TODO: when two delete patches are applied", ->
-    beforeEach ->
-      @patch = [{
-        diffs: [
-          [ 0, 'abc' ],
-          [ -1, 'z' ],
-          [ 0, 'def' ],
-          [ -1, 'g' ],
-          [ 0, 'hij' ]
-          ],
-        start1: 666,
-        start2: 666,
-        length1: 42,
-        length2: 41
-        }]
-      #console.log @patch
-      @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
-  
-    it "should return the right delete ops", ->
-      @callback.calledWithExactly([ { p: 669, d: 'z' }, { p: 672, d: 'g' } ], null)
-        .should.equal true
+        @patch = [{
+          diffs: [
+            [ 0, 'abc' ],
+            [ 1, 'z' ],
+            [ 0, 'def' ],
+            [ 1, 'g' ],
+            [ 0, 'hij' ]
+            ],
+          start1: 0,
+          start2: 0,
+          length1: 10,
+          length2: 10
+          }, {
+          diffs: [
+            [ 0, 'abcz' ],
+            [ 1, 'y' ],
+            [ 0, 'def' ],
+            [ -1, 'g' ],
+            [ 0, 'hij' ]
+            ],
+          start1: 0,
+          start2: 0,
+          length1: 10,
+          length2: 10
+          }]
+        #console.log @patch
+        @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
+    
+      it "should return all operations from both changes", ->
+        @callback.calledWithExactly([
+          { p: 3, i: 'z' },
+          { p: 7, i: 'g' },
+          { p: 4, i: 'y' },
+          { p: 8, d: 'g' }], null)
+          .should.equal true
+          
