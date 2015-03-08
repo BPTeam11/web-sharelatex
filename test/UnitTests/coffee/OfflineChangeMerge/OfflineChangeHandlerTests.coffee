@@ -32,32 +32,37 @@ describe "OfflineChangeHandler", ->
     beforeEach ->
       @OfflineChangeHandler.convertPatchToOps = sinon.spy()
 
-    #describe "when the document only changed offline", ->
-    #  beforeEach ->
-    #    @oldText     = "Text not changed."
-    #    @onlineText  = "Text not changed."
-    #    @offlineText = "Text changed offline."
-    #    @patch = [ {
-    #      diffs: [
-    #        [ 0, 'ext ' ],
-    #        [ -1, 'not ' ],
-    #        [ 0, 'changed' ],
-    #        [ 1, ' offline' ],
-    #        [ 0, '.' ] ],
-    #      'start1': 1,
-    #      'start2': 1,
-    #      'length1': 16,
-    #      'length2': 20 } ]
-    #
-    #    @patchIndicator = [ true ]
-    #    @OfflineChangeHandler.merge(@oldText, @offlineText, @onlineText, @callback)
-    #
-    #  it "should return the offline document", ->
-    #    # This only tests for the resulting document to equal the offlineText
-    #    # because patches were not recognised as equal even when they were.
-    #    @OfflineChangeHandler.convertPatchToOps
-    #      .calledWithMatch(@offlineText)
-    #      .should.equal true
+    describe "when the document only changed offline", ->
+      beforeEach ->
+        @oldText     = "Text not changed."
+        @onlineText  = "Text not changed."
+        @offlineText = "Text changed offline."
+        @patch = [ {
+          diffs: [
+            [ 0, 'ext ' ],
+            [ -1, 'not ' ],
+            [ 0, 'changed' ],
+            [ 1, ' offline' ],
+            [ 0, '.' ] ],
+          start1: 1,
+          start2: 1,
+          length1: 16,
+          length2: 20 } ]
+    
+        @patchIndicator = [ true ]
+        @OfflineChangeHandler.merge(@oldText, @offlineText, @onlineText, @callback)
+    
+      it "should apply all offline changes", ->
+        # This only tests for the resulting document to equal the offlineText
+        # because patches were not recognised as equal even when they were.
+        console.log "called patch:"
+        for argument in @OfflineChangeHandler.convertPatchToOps.args
+          for component in argument
+            console.log component
+        @OfflineChangeHandler.convertPatchToOps
+          #.called
+          .calledWithMatch(@patch)
+          .should.equal true
 
     #describe "when the document only changed online", ->
     #  describe "when offline a line was deleted in which online text was inserted", ->
