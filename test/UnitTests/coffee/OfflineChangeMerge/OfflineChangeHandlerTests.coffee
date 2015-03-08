@@ -53,16 +53,10 @@ describe "OfflineChangeHandler", ->
         @OfflineChangeHandler.merge(@oldText, @offlineText, @onlineText, @callback)
     
       it "should apply all offline changes", ->
-        # This only tests for the resulting document to equal the offlineText
-        # because patches were not recognised as equal even when they were.
-        console.log "called patch:"
-        for argument in @OfflineChangeHandler.convertPatchToOps.args
-          for component in argument
-            console.log component
-        @OfflineChangeHandler.convertPatchToOps
-          #.called
-          .calledWithMatch(@patch)
-          .should.equal true
+        # FIXME: This is a workaround for comparing two arrays. There should be
+        # a canonical way for doing this.
+        JSON.stringify(@OfflineChangeHandler.convertPatchToOps.getCall(0).args[0])
+          .should.equal JSON.stringify(@patch)
 
     #describe "when the document only changed online", ->
     #  describe "when offline a line was deleted in which online text was inserted", ->

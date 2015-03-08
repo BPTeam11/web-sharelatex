@@ -95,26 +95,10 @@ module.exports = OfflineChangeHandler =
     #To get the changes from the onlineDocText to the merged Text
     #patchedDocument = result[0]
     #result2 = dmp.patch_make(patchedDocument, onlineDocText)
-
-
-    #console.log "Infos to understand dmp. To be deleted."
-    #console.log "Old Doc"
-    #console.log oldDocText
-    #console.log "Offline Doc"
-    #console.log offlineDocText
-    #console.log "Online Doc"
-    #console.log onlineDocText
-    #console.log "patches generated from old Doc and offline Changes"
-    #console.log patch
-    #console.log "patchindicator list"
-    #console.log result[1]
-    #console.log "Online Doc with changes"
-    #console.log result[0]
-
-    #for thingy in patch
-    #  console.log thingy
-    console.log "merge patch:"
-    console.log patch
+    
+    #console.log "merge patch:"
+    #for change in patch
+    #  console.log change
 
     #The results[1] list is only useful if it is as long as the patch list
     #console.log "calling patch2ops"
