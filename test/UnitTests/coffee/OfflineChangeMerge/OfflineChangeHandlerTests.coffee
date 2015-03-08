@@ -69,10 +69,30 @@ describe "OfflineChangeHandler", ->
       it "should make no changes", ->
         @OfflineChangeHandler.convertPatchToOps
           .calledWith([]).should.equal true
-
-    #describe "when the document was changed both offline and online", ->
-    #  describe "when offline a line was deleted in which online text was inserted", ->
-
+    ###
+    describe "when the document was changed both offline and online", ->
+      describe "when offline a line was deleted in which online text was inserted", ->
+        beforeEach ->
+          @oldText = """
+          line1
+          line2
+          line3
+          """
+          @onlineText = """
+          line1
+          line2 hello
+          line3
+          """
+          @offlineText = """
+          line1
+          line3
+          """
+          @OfflineChangeHandler.merge(@oldText,@offlineText,@onlineText, @callback)
+        
+        it "should do something", ->
+          for patch in @OfflineChangeHandler.convertPatchToOps.getCall(0).args[0]
+            console.log patch
+    ###
 
   describe "getDocumentText", ->
     beforeEach ->

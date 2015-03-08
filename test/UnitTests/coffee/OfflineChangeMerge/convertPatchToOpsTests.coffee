@@ -16,10 +16,10 @@ describe "convertPatchToOps", ->
   describe "when the patch is empty", ->
     beforeEach ->
       @patch = []
-      @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
+      @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
 
     it "should return no ops", ->
-      @callback.calledWithExactly([], null).should.equal true
+      JSON.stringify(@ops).should.equal JSON.stringify([])
 
   describe "when the patch contains one change", ->
     describe "when the change contains two inserts", ->
@@ -38,11 +38,11 @@ describe "convertPatchToOps", ->
           length2: 11
           }]
         #console.log @patch
-        @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
+        @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
     
       it "should return the right insert ops", ->
-        @callback.calledWithExactly([ { p: 3, i: 'z' }, { p: 7, i: 'g' } ], null)
-          .should.equal true
+        JSON.stringify(@ops).should.equal JSON.stringify([
+          { p: 3, i: 'z' }, { p: 7, i: 'g' } ])
 
     describe "when the change contains two deletes", ->
       beforeEach ->
@@ -60,11 +60,11 @@ describe "convertPatchToOps", ->
           length2: 9
           }]
         #console.log @patch
-        @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
+        @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
     
       it "should return the right delete ops", ->
-        @callback.calledWithExactly([ { p: 3, d: 'z' }, { p: 6, d: 'g' } ], null)
-          .should.equal true
+        JSON.stringify(@ops).should.equal JSON.stringify([
+          { p: 3, d: 'z' }, { p: 6, d: 'g' } ])
 
   describe "when the patch contains two interconnected changes", ->
     #oldDocText = "Once there was a ship, on which it was very freezy, so that is why this boat was being called 'goat'"
@@ -95,13 +95,13 @@ describe "convertPatchToOps", ->
           length2: 36
           }]
         #console.log @patch
-        @OfflineChangeHandler.convertPatchToOps(@patch, @callback)
+        @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
     
       it "should return the right operations from both changes", ->
-        @callback.calledWithExactly([
+        JSON.stringify(@ops).should.equal JSON.stringify([
           { p: 17, d: 'ship' },
           { p: 17, i: 'boat' },
           { p: 39, d: 'very freezy, so that is why this boat was being' },
           { p: 39, i: 'quite cold, so was this boat' }
-          ], null).should.equal true
+          ])
           
