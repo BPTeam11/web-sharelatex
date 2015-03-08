@@ -69,10 +69,10 @@ module.exports = OfflineChangeHandler =
         console.log "This should be the new version:"
         console.log version
         console.log "ops of old versions"
-        console.log opsOld
-        for diff in opsOld
+        console.log previousOps
+        for diff in previousOps
           console.log diff.op
-        callback(onlineDocLines, opsOld, onlineVersion)
+        callback(onlineDocLines, previousOps, onlineVersion)
 
   # merge tries to "merge" the offline "branch" of a document into the current
   # document.

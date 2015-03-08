@@ -58,22 +58,20 @@ describe "OfflineChangeHandler", ->
         JSON.stringify(@OfflineChangeHandler.convertPatchToOps.getCall(0).args[0])
           .should.equal JSON.stringify(@patch)
 
-    #describe "when the document only changed online", ->
+    describe "when the document only changed online", ->
+      beforeEach ->
+        @oldText     = "Text not changed."
+        @onlineText  = "Text changed online."
+        @offlineText = "Text not changed."
+
+        @OfflineChangeHandler.merge(@oldText,@offlineText,@onlineText, @callback)
+
+      it "should make no changes", ->
+        @OfflineChangeHandler.convertPatchToOps
+          .calledWith([]).should.equal true
+
+    #describe "when the document was changed both offline and online", ->
     #  describe "when offline a line was deleted in which online text was inserted", ->
-    #    beforeEach ->
-    #      @oldText     = "Text not changed."
-    #      @onlineText  = "Text changed online."
-    #      @offlineText = "Text not changed."
-    #
-    #      @OfflineChangeHandler.merge(@oldText,@offlineText,@onlineText, @callback)
-    #
-    #    it "should return the online document", ->
-    #      @OfflineChangeHandler.convertPatchToOps
-    #        .calledWith(@onlineText, [], [], @onlineText, @offlineText)
-    #        .should.equal true
-    #
-    #  describe "when the document changed offline and online", ->
-        #TODO
 
 
   describe "getDocumentText", ->
@@ -119,7 +117,7 @@ describe "OfflineChangeHandler", ->
 
       it "should return the document before the changes from ops were applied", ->
         result = @OfflineChangeHandler.reverseOp(@docTextafterOp, {p:7, 'i':"<this> "})
-        console.log result
+        #console.log result
         result.should.equal @docTextbeforeOp
 
     describe "when the operation is a delete", ->
@@ -129,5 +127,5 @@ describe "OfflineChangeHandler", ->
 
       it "should return the document before the changes from ops were applied", ->
         result = @OfflineChangeHandler.reverseOp(@docTextafterOp, {p:7, 'd': "<this> "})
-        console.log result
+        #console.log result
         result.should.equal @docTextbeforeOp
