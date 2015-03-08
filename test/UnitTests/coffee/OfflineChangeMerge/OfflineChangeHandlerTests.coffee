@@ -96,7 +96,7 @@ describe "OfflineChangeHandler", ->
 
     describe "when the document exists", ->
       beforeEach ->
-        @OfflineChangeHandler.fetchDocuments =
+        @OfflineChangeHandler.getPreviousOps =
           sinon.stub().callsArgWith(3, @onlineDocLines, @ops, @version)
         @OfflineChangeHandler
           .getDocumentText(@project_id, @doc_id, @version, @callback)

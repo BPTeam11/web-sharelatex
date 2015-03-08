@@ -26,26 +26,35 @@ module.exports = OfflineChangeHandler =
         console.log user_id
         callback(project_id, doc.doc_id, change)
 
-  # returns a given document at a previous version
+  # generates a given document at a previous version
   # this version of the document should be common to all participating clients,
   # thus it will usually be the version *before* a client went offline.
   # It is the clients responsibility to provide this version number when coming back.
   getDocumentText: (project_id, doc_id, version, callback = (oldDocText, onlineDocText, onlineVersion) -> ) ->
-    @fetchDocuments project_id, doc_id, version, (onlineDocLines, opsOld, onlineVersion) =>
+    @getPreviousOps project_id, doc_id, version, (onlineDocLines, previousOps, onlineVersion) =>
       oldDocText = onlineDocLines.join('\n')
       onlineDocText = onlineDocLines.join('\n')
 
       # go through the array from back to front and reverse ops
-      if opsOld.length != 0
-        for i in [(opsOld.length-1)..0]
-          for op in opsOld[i].op
+      if previousOps.length != 0
+        for i in [(previousOps.length-1)..0]
+          for op in previousOps[i].op
             oldDocText = @reverseOp(oldDocText, op)
 
       callback(oldDocText,onlineDocText, onlineVersion)
 
-
-  fetchDocuments: (project_id, doc_id, version, callback = (onlineDocLines, opsOld, onlineVersion) -> ) ->
-    DocumentUpdaterHandler.getDocument project_id, doc_id, version, (err, temp, version1, opsOld)->
+  # getPreviousOps returns the list of operations from 'version' to current,
+  #   as well as the current document
+  # arguments:
+  #   project_id, doc_id: as always
+  #   version: previously common document version
+  # output:
+  #   onlineDocLines: lines of the current online document
+  #   previousOps: Operations that transformed the document from version 'version' to
+  #     the current version
+  #   onlineVersion: the current document version (TODO: delete if unneeded)
+  getPreviousOps: (project_id, doc_id, version, callback = (onlineDocLines, previousOps, onlineVersion) -> ) ->
+    DocumentUpdaterHandler.getDocument project_id, doc_id, version, (err, temp, version1, previousOps)->
       DocumentUpdaterHandler.getDocument project_id, doc_id, -1, (err, onlineDocLines, onlineVersion, opsNew)->
         console.log "This should be the new version:"
         console.log version
