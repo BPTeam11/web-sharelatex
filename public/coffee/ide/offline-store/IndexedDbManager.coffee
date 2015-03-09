@@ -27,7 +27,7 @@ define [], () ->
         docLinesIndex = store.createIndex "docLines", "docLines", unique: false
         versionIndex = store.createIndex "version", "version", unique: false
 
-        store = @db.createObjectStore "offlineChanges", keyPath: "id"
+        store = @db.createObjectStore "changedOffline", keyPath: "doc_id"
 
     flushPendingOps: () =>
       for f in @pendingOps

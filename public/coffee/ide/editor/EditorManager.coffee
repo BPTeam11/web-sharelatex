@@ -99,6 +99,9 @@ define [
 
 		getCurrentDocId: () ->
 			@$scope.editor.open_doc_id
+
+		getCurrentDoc: () =>
+			@$scope.editor.sharejs_doc
 			
 		startIgnoringExternalUpdates: () ->
 			@_ignoreExternalUpdates = true

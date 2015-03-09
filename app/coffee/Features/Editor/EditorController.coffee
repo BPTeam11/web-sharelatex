@@ -209,16 +209,18 @@ module.exports = EditorController =
 			EditorRealTimeController.emitToRoom(project_id, 'reciveNewDoc', folder_id, doc, source)
 			callback(err, doc)
 
-	mergeDoc: (project_id, user_id, sessionId, doc, callback = (error) ->) ->
+	mergeDoc: (project_id, user_id, sessionId, doc, callback = (error, clientUpdate, newVersion) ->) ->
 		doc_id = doc.doc_id
 		version = doc.version
 		logger.log {project_id, doc_id, version}, "merging doc"	
 
-		OfflineChangeHandler.computeChange project_id, user_id, sessionId, doc, (project_id, doc_id, change) =>
+		OfflineChangeHandler.computeChange project_id, user_id, sessionId, doc, (project_id, doc_id, change, clientChange, newVersion) =>
 
 			#TODO maybe(dunno if this is a big problem): make sure the pending queue is empty so that no updates are insserted while changes are computed -> lock the queue
 			DocumentUpdaterHandler.queueChange project_id, doc_id, change, (err)  ->
-				callback(err) if err?		
+				callback(err) if err?
+				console.log clientChange
+				callback err, clientChange, newVersion
 
 
 	addFile: (project_id, folder_id, fileName, path, source, callback = (error, file)->)->

@@ -53,8 +53,10 @@ module.exports = EditorHttpController =
 		if req.session?.user?._id?
 			user_id = req.session.user._id
 		#TODO: else throw an error
-		EditorController.mergeDoc project_id, user_id, sessionId, doc, (error) ->
+		EditorController.mergeDoc project_id, user_id, sessionId, doc, (error, clientChange, newVersion) ->
 			return next(error) if error?
+			console.log clientChange
+			res.json "ops": clientChange, "newVersion": newVersion
 
 	addFolder: (req, res, next) ->
 		project_id = req.params.Project_id
