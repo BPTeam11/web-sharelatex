@@ -492,6 +492,10 @@ js/ide/pdfng/directives/pdfPage.js
 js/ide/offline-store/OfflineStoreManager.js
 js/ide/offline-store/IndexedDbManager.js
 
+http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
+http://cdn.mathjax.org/mathjax/latest/config/TeX-AMS_HTML.js?rev=2.5.1
+http://cdn.mathjax.org/mathjax/latest/extensions/MathMenu.js?rev=2.5.1
+http://cdn.mathjax.org/mathjax/latest/extensions/MathZoom.js?rev=2.5.1
 
 
 ### CSS ###
@@ -501,6 +505,18 @@ js/libs/pdfListView/TextLayer.css
 js/libs/pdfListView/AnnotationsLayer.css
 js/libs/pdfListView/HighlightsLayer.css
 
+http://netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css
+http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700
+http://fonts.googleapis.com/css?family=PT+Serif:400,600,700
+
+
+### Fonts ###
+http://fonts.gstatic.com/s/ptserif/v8/I-OtoJZa3TeyH6D9oli3ifesZW2xOQ-xsNqO47m55DA.woff2
+http://fonts.gstatic.com/s/opensans/v10/cJZKeOuBrn4kERxqtaUH3VtXRa8TVwTICgirnJhmVJw.woff2
+http://netdna.bootstrapcdn.com/font-awesome/4.1.0/fonts/fontawesome-webfont.woff?v=4.1.0
+http://fonts.gstatic.com/s/opensans/v10/k3k702ZOKiLJc3WVjuplzOgdm0LZdjqr5-oayXSOefg.woff2
+http://netdna.bootstrapcdn.com/font-awesome/4.1.0/fonts/fontawesome-webfont.ttf?v=4.1.0
+http://netdna.bootstrapcdn.com/font-awesome/4.1.0/fonts/fontawesome-webfont.svg?v=4.1.0#fontawesomeregular
 
 ### images ###
 img/logo.png
