@@ -67,6 +67,9 @@ define [
     deletePendingOps: () ->
       @doc?.deletePendingOps()
 
+    deleteInflightOp: () =>
+      @doc?.deleteInflightOp()
+
     hasBufferedOps: () ->
       @doc?.hasBufferedOps()
 

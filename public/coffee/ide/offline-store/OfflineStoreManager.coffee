@@ -6,6 +6,7 @@ define () ->
       @ide.$scope.$on "offline:doc:change", (event, doc) =>
         console.log "ide event: offline:doc:change"
         doc.deletePendingOps()
+        doc.deleteInflightOp()
 
         @cacheDocument doc, true
 

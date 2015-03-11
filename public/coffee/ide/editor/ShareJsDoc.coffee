@@ -108,6 +108,12 @@ define [
 		deletePendingOps: () -> 
 			@_doc.pendingOp = null 
 
+		deleteInflightOp: () =>
+			@_doc.inflightOp = null
+			@_doc.inflightSubmittedIds.length = 0
+
+			for callback in @_doc.inflightCallbacks
+				callback("Connection lost")
 
 		attachToAce: (ace) -> @_doc.attach_ace(ace)
 		detachFromAce: () -> @_doc.detach_ace?()
