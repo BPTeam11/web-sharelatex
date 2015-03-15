@@ -82,46 +82,76 @@ module.exports = OfflineChangeHandler =
     onc = []
     patchOffset = 0
     
+    currentOfflineConflict = false
+    currentOnlineConflict  = false
+
     while (i+j) < (ofp.length + onp.length)
-      # add check for array bounds
       
       if (i < ofp.length)
-        nextOfflinePatchStart = ofp[i].start1 + cl
-        nextOfflinePatchEnd   = nextOfflinePatchStart + ofp[i].length1 - 1 - cl
+        currentOfflinePatchStart = ofp[i].start1 + cl
+        currentOfflinePatchEnd   = currentOfflinePatchStart + ofp[i].length1 - 1 - cl
       
       if (j < onp.length)
-        nextOnlinePatchStart  = onp[i].start1 + cl
-        nextOnlinePatchEnd    = nextOnlinePatchStart + onp[i].length1 - 1 - cl
-      
+        currentOnlinePatchStart  = onp[j].start1 + cl
+        currentOnlinePatchEnd    = currentOnlinePatchStart + onp[j].length1 - 1 - cl
+
       # offlinePatch first, no conflict
-      if (nextOfflinePatchEnd < nextOnlinePatchStart) && (i < ofp.length)
+      if (currentOfflinePatchEnd < currentOnlinePatchStart) && (i < ofp.length) && !currentOfflineConflict
         # integrate offlinePatch
-        ofp[i].start1 += patchOffset
-        ofp[i].start2 += patchOffset
+        #ofp[i].start1 += patchOffset
+        #ofp[i].start2 += patchOffset
         patchOffset += ofp[i].length2 - ofp[i].length1
         mp.push ofp[i]
         i++
+      
       # onlinePatch first, no conflict
-      else if (nextOnlinePatchEnd < nextOfflinePatchStart) && (j < onp.length)
+      else if (currentOnlinePatchEnd < currentOfflinePatchStart) && (j < onp.length) && !currentOnlineConflict
         # integrate onlinePatch
-        onp[j].start1 += patchOffset
-        onp[j].start2 += patchOffset
+        #onp[j].start1 += patchOffset
+        #onp[j].start2 += patchOffset
         patchOffset += onp[j].length2 - onp[j].length1
         mp.push onp[j]
         j++
-      # otherwise, it's a conflict
-      else
-        ofp[i].start1 += patchOffset
-        ofp[i].start2 += patchOffset
-        onp[j].start1 += patchOffset
-        onp[j].start2 += patchOffset
-        # the new patch offset depends on which action will be taken to resolve
-        # the conflict! For now, no action is taken.
+      
+      # no conflict with upcoming online patch, but we need to clean up the old conflict first
+      else if currentOfflineConflict
         ofc.push ofp[i]
         i++
+        currentOfflineConflict = false
+      
+      # no conflict with upcoming offline patch, but we need to clean up the old conflict first
+      else if currentOnlineConflict
         onc.push onp[j]
         j++
+        currentOnlineConflict = false
       
+      # otherwise, it's a conflict
+      else
+        #ofp[i].start1 += patchOffset
+        #ofp[i].start2 += patchOffset
+        #onp[j].start1 += patchOffset
+        #onp[j].start2 += patchOffset
+        # the new patch offset depends on which action will be taken to resolve
+        # the conflict! For now, no action is taken.
+        
+        # there may later be an overlap with online
+        if (currentOfflinePatchEnd < currentOnlinePatchEnd)
+          ofc.push ofp[i]
+          i++
+          currentOnlineConflict = true
+        # there may later be an overlap with offline
+        else if (currentOnlinePatchEnd < currentOfflinePatchEnd)
+          onc.push onp[j]
+          j++
+          currentOfflineConflict = true
+        # they have equal ends, no overlap with later patches possible
+        else
+          ofc.push ofp[i]
+          i++
+          onc.push onp[j]
+          j++
+    ###
+    
     callback(mp, ofc, onc)
 
   convertPatchesToOps: (patches) ->
