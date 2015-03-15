@@ -34,7 +34,6 @@ module.exports = OfflineChangeHandler =
   # computeChange generates a list of changes that will try to apply
   #   changes which were made to the old document offline
   #   to the current document retroactively.
-  # TODO: what if that was not successful?
   computeChange: (project_id, user_id, sessionId, doc, callback = (project_id, doc_id, change) ->)->
 
     console.log "MergeHandler here :)  Old version:"
@@ -45,10 +44,10 @@ module.exports = OfflineChangeHandler =
         @mergeAndIntegrate ofp, onp, (mp, ofc, onc) =>
           ops = @convertPatchesToOps mp
           # ignore conflicts for now
-          # this may be splitted up into single ops
+          # this may be splitted up into single ops:
           change = {
             doc: doc.doc_id
-            op: ops # TODO: What if ops = []?
+            op: ops
             v : onlineVersion
             meta : {
               source: sessionId
@@ -58,12 +57,13 @@ module.exports = OfflineChangeHandler =
         console.log user_id
         callback(project_id, doc.doc_id, change)
   
-  # offline- and online-Patch need to be sorted
-  # ofc and onc do not necessarily have the same length
-  #
-  # merging the patches and adding up offsets ("integrating"), then splitting
-  # the results into dedicated arrays. These things are best done in one loop.
-  
+  ###
+    offline- and online-Patch need to be sorted
+    ofc and onc do not necessarily have the same length
+   
+    merging the patches and adding up offsets ("integrating"), then splitting
+    the results into dedicated arrays. These things are best done in one loop.
+  ###
   mergeAndIntegrate: (ofp, onp, callback = (mp, ofc, onc) -> ) ->
     # utilizing heavy iterative style here for efficiency
     # Assuming that the DMP context length is always 4 characters!
@@ -76,19 +76,39 @@ module.exports = OfflineChangeHandler =
     onc = []
     patchOffset = 0
     
+    # these values say whether
+    # 1.) the current off/online index did not change since last iteration
+    # 2.) the according patch conflicted with a previous patch, which means
+    #     that we want to add it to the ofc/onc array at a later point.
     currentOfflineConflict = false
     currentOnlineConflict  = false
 
-    while (i+j) < (ofp.length + onp.length)
+    while (i < ofp.length || j < onp.length)
+    
+      # TODO: use the main logger for this
+      if currentOfflineConflict && currentOnlineConflict
+        console.log "ERROR: offline and online conflict! This should not happen!"
       
-      if (i < ofp.length)
+      # update offline patch bounds
+      if (i < ofp.length && !currentOfflineConflict)
         currentOfflinePatchStart = ofp[i].start1 + cl
         currentOfflinePatchEnd   = currentOfflinePatchStart + ofp[i].length1 - 1 - cl
       
-      if (j < onp.length)
+      # update online patch bounds
+      if (j < onp.length && !currentOnlineConflict)
         currentOnlinePatchStart  = onp[j].start1 + cl
         currentOnlinePatchEnd    = currentOnlinePatchStart + onp[j].length1 - 1 - cl
 
+      # --- Checking for conflicts
+      ###
+        The general idea is that we operate on the patch with the lower position first.
+        If there is a conflict, we keep the patch with a higher position in mind to check if
+        there are are any later conflicting changes coming. Because the patches
+        from DMP are sorted by default, once we find that the next higher patch
+        does *not* conflict, we can be sure that none of the later patches will
+        conflict.
+      ###
+      
       # offlinePatch first, no conflict
       if (currentOfflinePatchEnd < currentOnlinePatchStart) && (i < ofp.length)
         # no conflict with upcoming online patch, but we need to clean up the old conflict first
@@ -121,9 +141,9 @@ module.exports = OfflineChangeHandler =
 
       # otherwise, it's a conflict
       else
-        
         # the new patch offset depends on which action will be taken to resolve
         # the conflict! For now, no action is taken.
+        # patchOffset += ???
         
         # there may later be an overlap with online
         if (currentOfflinePatchEnd < currentOnlinePatchEnd)
@@ -131,6 +151,7 @@ module.exports = OfflineChangeHandler =
           ofp[i].start2 += patchOffset
           ofc.push ofp[i]
           i++
+          currentOfflineConflict = false
           currentOnlineConflict = true
         # there may later be an overlap with offline
         else if (currentOnlinePatchEnd < currentOfflinePatchEnd)
@@ -138,6 +159,7 @@ module.exports = OfflineChangeHandler =
           onp[j].start2 += patchOffset
           onc.push onp[j]
           j++
+          currentOnlineConflict = false
           currentOfflineConflict = true
         # they have equal ends, no overlap with later patches possible
         else
@@ -145,18 +167,20 @@ module.exports = OfflineChangeHandler =
           ofp[i].start2 += patchOffset
           ofc.push ofp[i]
           i++
+          currentOfflineConflict = false
           onp[j].start1 += patchOffset
           onp[j].start2 += patchOffset
           onc.push onp[j]
           j++
-    ###
+          currentOnlineConflict = false
     
     callback(mp, ofc, onc)
 
+  # this function relies on the fact that the patches have already been updated
+  # to respect previous changes inside the patch, thus shifting the position
+  # forward or backward. (as done by mergeAndIntegrate)
   convertPatchesToOps: (patches) ->
     ops = []
-    # the total offset inside of the document, based on the length difference
-    # of the entire patch, was already summed up by mergeAndIntegrate
     for patch in patches
       # offset inside the patch
       offset = 0
@@ -177,7 +201,6 @@ module.exports = OfflineChangeHandler =
     #console.log "Calculated Ops:"
     #console.log ops
     ops
-
 
   getPatches: (oldDocText, offlineDocText, onlineDocText, callback = (ofp, onp) -> ) ->
     #if this is smaller then the algorithm is more careful.
