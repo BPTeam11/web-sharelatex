@@ -59,17 +59,11 @@ module.exports = OfflineChangeHandler =
         callback(project_id, doc.doc_id, change)
   
   # offline- and online-Patch need to be sorted
-  # ofc and onc have the same length, the conflict is 
-  # between entries with the same index
+  # ofc and onc do not necessarily have the same length
   #
   # merging the patches and adding up offsets ("integrating"), then splitting
   # the results into dedicated arrays. These things are best done in one loop.
   
-  ###
-    TODO:
-      -------  -------  -------
-    -----  ------  --------
-  ###
   mergeAndIntegrate: (ofp, onp, callback = (mp, ofc, onc) -> ) ->
     # utilizing heavy iterative style here for efficiency
     # Assuming that the DMP context length is always 4 characters!
@@ -96,58 +90,63 @@ module.exports = OfflineChangeHandler =
         currentOnlinePatchEnd    = currentOnlinePatchStart + onp[j].length1 - 1 - cl
 
       # offlinePatch first, no conflict
-      if (currentOfflinePatchEnd < currentOnlinePatchStart) && (i < ofp.length) && !currentOfflineConflict
-        # integrate offlinePatch
-        #ofp[i].start1 += patchOffset
-        #ofp[i].start2 += patchOffset
-        patchOffset += ofp[i].length2 - ofp[i].length1
-        mp.push ofp[i]
-        i++
+      if (currentOfflinePatchEnd < currentOnlinePatchStart) && (i < ofp.length)
+        # no conflict with upcoming online patch, but we need to clean up the old conflict first
+        if currentOfflineConflict
+          ofc.push ofp[i]
+          i++
+          currentOfflineConflict = false
+        else
+          # integrate offlinePatch
+          ofp[i].start1 += patchOffset
+          ofp[i].start2 += patchOffset
+          patchOffset += ofp[i].length2 - ofp[i].length1
+          mp.push ofp[i]
+          i++
       
       # onlinePatch first, no conflict
-      else if (currentOnlinePatchEnd < currentOfflinePatchStart) && (j < onp.length) && !currentOnlineConflict
-        # integrate onlinePatch
-        #onp[j].start1 += patchOffset
-        #onp[j].start2 += patchOffset
-        patchOffset += onp[j].length2 - onp[j].length1
-        mp.push onp[j]
-        j++
-      
-      # no conflict with upcoming online patch, but we need to clean up the old conflict first
-      else if currentOfflineConflict
-        ofc.push ofp[i]
-        i++
-        currentOfflineConflict = false
-      
-      # no conflict with upcoming offline patch, but we need to clean up the old conflict first
-      else if currentOnlineConflict
-        onc.push onp[j]
-        j++
-        currentOnlineConflict = false
-      
+      else if (currentOnlinePatchEnd < currentOfflinePatchStart) && (j < onp.length)
+        # no conflict with upcoming offline patch, but we need to clean up the old conflict first
+        if currentOnlineConflict
+          onc.push onp[j]
+          j++
+          currentOnlineConflict = false
+        else
+          # integrate onlinePatch
+          onp[j].start1 += patchOffset
+          onp[j].start2 += patchOffset
+          patchOffset += onp[j].length2 - onp[j].length1
+          mp.push onp[j]
+          j++
+
       # otherwise, it's a conflict
       else
-        #ofp[i].start1 += patchOffset
-        #ofp[i].start2 += patchOffset
-        #onp[j].start1 += patchOffset
-        #onp[j].start2 += patchOffset
+        
         # the new patch offset depends on which action will be taken to resolve
         # the conflict! For now, no action is taken.
         
         # there may later be an overlap with online
         if (currentOfflinePatchEnd < currentOnlinePatchEnd)
+          ofp[i].start1 += patchOffset
+          ofp[i].start2 += patchOffset
           ofc.push ofp[i]
           i++
           currentOnlineConflict = true
         # there may later be an overlap with offline
         else if (currentOnlinePatchEnd < currentOfflinePatchEnd)
+          onp[j].start1 += patchOffset
+          onp[j].start2 += patchOffset
           onc.push onp[j]
           j++
           currentOfflineConflict = true
         # they have equal ends, no overlap with later patches possible
         else
+          ofp[i].start1 += patchOffset
+          ofp[i].start2 += patchOffset
           ofc.push ofp[i]
           i++
+          onp[j].start1 += patchOffset
+          onp[j].start2 += patchOffset
           onc.push onp[j]
           j++
     ###
