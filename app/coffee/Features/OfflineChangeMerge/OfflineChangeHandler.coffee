@@ -92,6 +92,19 @@ module.exports = OfflineChangeHandler =
     # offset caused by applying online patches at the offline-client side
     onlineOffset  = 0
     
+    # if both ofp and onp are empty, there are no merges and no conflicts
+    if (ofp.length == onp.length == 0)
+      return callback(mofp, monp, ofc, onc)
+    
+    # if ofp is empty (but not onp), merges are simply the onp, no conflicts
+    else if (ofp.length == 0)
+      return callback(mofp, onp, ofc, onc)
+    
+    # if onp is empty (but not ofp), merges are simply the ofp, no conflicts
+    else if (onp.length == 0)
+      return callback(ofp, monp, ofc, onc)
+    
+    # from now on, ofp and onp are non-empty
     
     # these values say whether
     # 1.) the current off/online index did not change since last iteration
@@ -107,18 +120,20 @@ module.exports = OfflineChangeHandler =
         console.log "ERROR: offline and online conflict! This should not happen!"
       
       # update offline patch bounds
+      # if currentOfflineConflict, i did not change
       if (i < ofp.length && !currentOfflineConflict)
         currentOfflinePatchStart = ofp[i].start1 + cl
-        #console.log "currentOfflinePatchStart", currentOfflinePatchStart
+        console.log "currentOfflinePatchStart", currentOfflinePatchStart
         currentOfflinePatchEnd   = currentOfflinePatchStart + ofp[i].length1 - 1 - cl
-        #console.log "currentOfflinePatchEnd", currentOfflinePatchEnd
+        console.log "currentOfflinePatchEnd", currentOfflinePatchEnd
       
       # update online patch bounds
+      # if currentOnlineConflict, j did not change
       if (j < onp.length && !currentOnlineConflict)
         currentOnlinePatchStart  = onp[j].start1 + cl
-        #console.log "currentOnlinePatchStart", currentOnlinePatchStart
+        console.log "currentOnlinePatchStart", currentOnlinePatchStart
         currentOnlinePatchEnd    = currentOnlinePatchStart + onp[j].length1 - 1 - cl
-        #console.log "currentOnlinePatchEnd", currentOnlinePatchEnd
+        console.log "currentOnlinePatchEnd", currentOnlinePatchEnd
 
       # --- Checking for conflicts
       ###
@@ -131,7 +146,8 @@ module.exports = OfflineChangeHandler =
       ###
       
       # offlinePatch first, no conflict
-      if ((currentOfflinePatchEnd < currentOnlinePatchStart) || onp.length == 0) && (i < ofp.length)
+      # if we already merged all offline patches, this is not relevant
+      if (currentOfflinePatchEnd < currentOnlinePatchStart) && (i < ofp.length)
         # no conflict with upcoming online patch, but we need to clean up the old conflict first
         if currentOfflineConflict
           ofc.push ofp[i]
@@ -146,7 +162,8 @@ module.exports = OfflineChangeHandler =
           i++
       
       # onlinePatch first, no conflict
-      else if ((currentOnlinePatchEnd < currentOfflinePatchStart) || ofp.length == 0) && (j < onp.length)
+      # if we already merged all online patches, this is not relevant
+      else if (currentOnlinePatchEnd < currentOfflinePatchStart) && (j < onp.length)
         # no conflict with upcoming offline patch, but we need to clean up the old conflict first
         if currentOnlineConflict
           onc.push onp[j]
@@ -161,8 +178,7 @@ module.exports = OfflineChangeHandler =
           j++
 
       # otherwise, it's a conflict
-      # this is only true if there *are* two patches
-      else if onp.length != 0 && ofp.length != 0
+      else
         # the new patch offset depends on which action will be taken to resolve
         # the conflict! For now, no action is taken.
         # patchOffset += ???
@@ -205,6 +221,7 @@ module.exports = OfflineChangeHandler =
     
     callback(mofp, monp, ofc, onc)
 
+  # TODO fix the offset
   # this function relies on the fact that the patches have already been updated
   # to respect previous changes inside the patch, thus shifting the position
   # forward or backward. (as done by mergeAndIntegrate)
