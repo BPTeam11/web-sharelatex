@@ -6,7 +6,7 @@ modulePath = "../../../../app/js/Features/OfflineChangeMerge/OfflineChangeHandle
 SandboxedModule = require('sandboxed-module')
 Errors = require "../../../../app/js/errors"
 
-describe "convertPatchToOps", ->
+describe "convertPatchesToOps", ->
   beforeEach ->
     @OfflineChangeHandler = SandboxedModule.require modulePath, requires:  
       "../Project/ProjectEntityHandler": @ProjectEntityHandler = {},
@@ -16,7 +16,7 @@ describe "convertPatchToOps", ->
   describe "when the patch is empty", ->
     beforeEach ->
       @patch = []
-      @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
+      @ops = @OfflineChangeHandler.convertPatchesToOps(@patch)
 
     it "should return no ops", ->
       JSON.stringify(@ops).should.equal JSON.stringify([])
@@ -38,7 +38,7 @@ describe "convertPatchToOps", ->
           length2: 11
           }]
         #console.log @patch
-        @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
+        @ops = @OfflineChangeHandler.convertPatchesToOps(@patch)
     
       it "should return the right insert ops", ->
         JSON.stringify(@ops).should.equal JSON.stringify([
@@ -60,7 +60,7 @@ describe "convertPatchToOps", ->
           length2: 9
           }]
         #console.log @patch
-        @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
+        @ops = @OfflineChangeHandler.convertPatchesToOps(@patch)
     
       it "should return the right delete ops", ->
         JSON.stringify(@ops).should.equal JSON.stringify([
@@ -95,7 +95,7 @@ describe "convertPatchToOps", ->
           length2: 36
           }]
         #console.log @patch
-        @ops = @OfflineChangeHandler.convertPatchToOps(@patch)
+        @ops = @OfflineChangeHandler.convertPatchesToOps(@patch)
     
       it "should return the right operations from both changes", ->
         JSON.stringify(@ops).should.equal JSON.stringify([
