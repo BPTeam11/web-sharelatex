@@ -54,8 +54,8 @@ module.exports = OfflineChangeHandler =
               user_id: user_id
             }
           }
-        console.log user_id
-        callback(project_id, doc.doc_id, change)
+          console.log user_id
+          callback(project_id, doc.doc_id, change)
   
   ###
     offline- and online-Patch need to be sorted
@@ -92,12 +92,16 @@ module.exports = OfflineChangeHandler =
       # update offline patch bounds
       if (i < ofp.length && !currentOfflineConflict)
         currentOfflinePatchStart = ofp[i].start1 + cl
+        console.log "currentOfflinePatchStart", currentOfflinePatchStart
         currentOfflinePatchEnd   = currentOfflinePatchStart + ofp[i].length1 - 1 - cl
+        console.log "currentOfflinePatchEnd", currentOfflinePatchEnd
       
       # update online patch bounds
       if (j < onp.length && !currentOnlineConflict)
         currentOnlinePatchStart  = onp[j].start1 + cl
+        console.log "currentOnlinePatchStart", currentOnlinePatchStart
         currentOnlinePatchEnd    = currentOnlinePatchStart + onp[j].length1 - 1 - cl
+        console.log "currentOnlinePatchEnd", currentOnlinePatchEnd
 
       # --- Checking for conflicts
       ###
@@ -110,7 +114,7 @@ module.exports = OfflineChangeHandler =
       ###
       
       # offlinePatch first, no conflict
-      if (currentOfflinePatchEnd < currentOnlinePatchStart) && (i < ofp.length)
+      if ((currentOfflinePatchEnd < currentOnlinePatchStart) || onp.length == 0) && (i < ofp.length)
         # no conflict with upcoming online patch, but we need to clean up the old conflict first
         if currentOfflineConflict
           ofc.push ofp[i]
@@ -125,7 +129,7 @@ module.exports = OfflineChangeHandler =
           i++
       
       # onlinePatch first, no conflict
-      else if (currentOnlinePatchEnd < currentOfflinePatchStart) && (j < onp.length)
+      else if ((currentOnlinePatchEnd < currentOfflinePatchStart) || ofp.length == 0) && (j < onp.length)
         # no conflict with upcoming offline patch, but we need to clean up the old conflict first
         if currentOnlineConflict
           onc.push onp[j]
@@ -140,13 +144,14 @@ module.exports = OfflineChangeHandler =
           j++
 
       # otherwise, it's a conflict
-      else
+      # this is only true if there *are* two patches
+      else if onp.length != 0 && ofp.length != 0
         # the new patch offset depends on which action will be taken to resolve
         # the conflict! For now, no action is taken.
         # patchOffset += ???
         
         # there may later be an overlap with online
-        if (currentOfflinePatchEnd < currentOnlinePatchEnd)
+        if (currentOfflinePatchEnd < currentOnlinePatchEnd) && (i < ofp.length)
           ofp[i].start1 += patchOffset
           ofp[i].start2 += patchOffset
           ofc.push ofp[i]
@@ -154,7 +159,7 @@ module.exports = OfflineChangeHandler =
           currentOfflineConflict = false
           currentOnlineConflict = true
         # there may later be an overlap with offline
-        else if (currentOnlinePatchEnd < currentOfflinePatchEnd)
+        else if (currentOnlinePatchEnd < currentOfflinePatchEnd) && (j < onp.length)
           onp[j].start1 += patchOffset
           onp[j].start2 += patchOffset
           onc.push onp[j]
@@ -162,7 +167,7 @@ module.exports = OfflineChangeHandler =
           currentOnlineConflict = false
           currentOfflineConflict = true
         # they have equal ends, no overlap with later patches possible
-        else
+        else if (i < ofp.length) && (j < onp.length)
           ofp[i].start1 += patchOffset
           ofp[i].start2 += patchOffset
           ofc.push ofp[i]
@@ -173,6 +178,13 @@ module.exports = OfflineChangeHandler =
           onc.push onp[j]
           j++
           currentOnlineConflict = false
+        else
+          # TODO: Use logger
+          console.log "Err ... Something somewhere went terribly wrong in mergeAndIntegrate. Contact a developer."
+          console.log "onp.length", onp.length
+          console.log "i", i
+          console.log "ofp.length", ofp.length
+          console.log "j", j
     
     callback(mp, ofc, onc)
 

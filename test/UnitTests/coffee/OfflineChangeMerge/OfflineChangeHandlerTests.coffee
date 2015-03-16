@@ -30,7 +30,7 @@ describe "OfflineChangeHandler", ->
 
   describe "merge", ->
     beforeEach ->
-      @OfflineChangeHandler.convertPatchToOps = sinon.spy()
+      @OfflineChangeHandler.convertPatchesToOps = sinon.spy()
 
     describe "when the document only changed offline", ->
       beforeEach ->
@@ -55,7 +55,7 @@ describe "OfflineChangeHandler", ->
       it "should apply all offline changes", ->
         # FIXME: This is a workaround for comparing two arrays. There should be
         # a canonical way for doing this.
-        JSON.stringify(@OfflineChangeHandler.convertPatchToOps.getCall(0).args[0])
+        JSON.stringify(@OfflineChangeHandler.convertPatchesToOps.getCall(0).args[0])
           .should.equal JSON.stringify(@patch)
 
     describe "when the document only changed online", ->
@@ -67,7 +67,7 @@ describe "OfflineChangeHandler", ->
         @OfflineChangeHandler.merge(@oldText,@offlineText,@onlineText, @callback)
 
       it "should make no changes", ->
-        @OfflineChangeHandler.convertPatchToOps
+        @OfflineChangeHandler.convertPatchesToOps
           .calledWith([]).should.equal true
     ###
     describe "when the document was changed both offline and online", ->
@@ -90,7 +90,7 @@ describe "OfflineChangeHandler", ->
           @OfflineChangeHandler.merge(@oldText,@offlineText,@onlineText, @callback)
         
         it "should do something", ->
-          for patch in @OfflineChangeHandler.convertPatchToOps.getCall(0).args[0]
+          for patch in @OfflineChangeHandler.convertPatchesToOps.getCall(0).args[0]
             console.log patch
     ###
 
