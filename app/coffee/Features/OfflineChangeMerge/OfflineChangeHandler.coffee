@@ -3,6 +3,7 @@ diff_match_patch = require("../../../lib/diff_match_patch").diff_match_patch
 dmp = new diff_match_patch()
 strInject= (s1, pos, s2) -> s1[...pos] + s2 + s1[pos..]
 strDel = (s1, pos, length) -> s1[...pos] + s1[(pos+length)..]
+util = require('util');
 
 ###
   For the vocabulary:
@@ -72,6 +73,11 @@ module.exports = OfflineChangeHandler =
     the results into dedicated arrays. These things are best done in one loop.
   ###
   mergeAndIntegrate: (ofp, onp, callback = (mofp, monp, ofc, onc) -> ) ->
+    # parameter dump
+    console.log "PARAMETER DUMP: mergeAndIntegrate"
+    logFull "ofp", ofp
+    logFull "onp", onp
+    
     # utilizing heavy iterative style here for efficiency
     # Assuming that the DMP context length is always 4 characters!
     cl = 4
@@ -94,15 +100,18 @@ module.exports = OfflineChangeHandler =
     
     # if both ofp and onp are empty, there are no merges and no conflicts
     if (ofp.length == onp.length == 0)
-      return callback(mofp, monp, ofc, onc)
+      console.log "mergeAndIntegrate: Got two empty patches"
+      return callback([], [], [], [])
     
     # if ofp is empty (but not onp), merges are simply the onp, no conflicts
     else if (ofp.length == 0)
-      return callback(mofp, onp, ofc, onc)
+      console.log "mergeAndIntegrate: offlinePatches is empty"
+      return callback([], onp, [], [])
     
     # if onp is empty (but not ofp), merges are simply the ofp, no conflicts
     else if (onp.length == 0)
-      return callback(ofp, monp, ofc, onc)
+      console.log "mergeAndIntegrate: onlinePatches is empty"
+      return callback(ofp, [], [], [])
     
     # from now on, ofp and onp are non-empty
     
@@ -114,6 +123,9 @@ module.exports = OfflineChangeHandler =
     currentOnlineConflict  = false
 
     while (i < ofp.length || j < onp.length)
+      console.log "BEGIN mergeAndIntegrate loop:"
+      logFull "i", i
+      logFull "j", j
     
       # TODO: use the main logger for this
       if currentOfflineConflict && currentOnlineConflict
@@ -179,11 +191,12 @@ module.exports = OfflineChangeHandler =
 
       # otherwise, it's a conflict
       else
-        # the new patch offset depends on which action will be taken to resolve
-        # the conflict! For now, no action is taken.
-        # patchOffset += ???
+        console.log "There is a conflict"
+        # NOTE: You'll need to take care of offsets when merging later
         
-        # there may later be an overlap with online
+        # offline: ----- ???
+        # online:    -----
+        # --> There may be a conflict with offline later
         if (currentOfflinePatchEnd < currentOnlinePatchEnd) && (i < ofp.length)
           ofp[i].start1 += onlineOffset
           ofp[i].start2 += onlineOffset
@@ -191,7 +204,10 @@ module.exports = OfflineChangeHandler =
           i++
           currentOfflineConflict = false
           currentOnlineConflict = true
-        # there may later be an overlap with offline
+        
+        # offline:   -----
+        # online:  ----- ???
+        # --> There may be a conflict with online later
         else if (currentOnlinePatchEnd < currentOfflinePatchEnd) && (j < onp.length)
           onp[j].start1 += offlineOffset
           onp[j].start2 += offlineOffset
@@ -199,8 +215,11 @@ module.exports = OfflineChangeHandler =
           j++
           currentOnlineConflict = false
           currentOfflineConflict = true
-        # they have equal ends, no overlap with later patches possible
-        else if (i < ofp.length) && (j < onp.length)
+        
+        # offline: -------- ???
+        # online:     ----- ???
+        # --> They have equal ends, no overlap with later patches possible
+        else
           ofp[i].start1 += onlineOffset
           ofp[i].start2 += onlineOffset
           ofc.push ofp[i]
@@ -211,6 +230,7 @@ module.exports = OfflineChangeHandler =
           onc.push onp[j]
           j++
           currentOnlineConflict = false
+        ###
         else
           # TODO: Use logger
           console.log "Err ... Something somewhere went terribly wrong in mergeAndIntegrate. Contact a developer."
@@ -218,7 +238,13 @@ module.exports = OfflineChangeHandler =
           console.log "i", i
           console.log "ofp.length", ofp.length
           console.log "j", j
+        ###
     
+    console.log "OUTPUT DUMP: mergeAndIntegrate"
+    logFull "mofp", mofp
+    logFull "monp", monp
+    logFull "ofc",  ofc
+    logFull "onc",  onc
     callback(mofp, monp, ofc, onc)
 
   # TODO fix the offset
@@ -304,4 +330,7 @@ module.exports = OfflineChangeHandler =
     else if(op.d?)
       changedDoc = strInject docText, op.p, op.d
     changedDoc
+  
+  logFull: (description, myObject) ->
+    console.log description, "=", util.inspect(myObject, {showHidden: false, depth: null})
 
