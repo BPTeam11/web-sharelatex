@@ -515,5 +515,5 @@ NETWORK:
 *
 
 FALLBACK: 
-###/project/ fallback.html 
+/project project_offline.html
 ###/socket.io/socket.io.js testoing.js

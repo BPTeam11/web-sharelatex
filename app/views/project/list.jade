@@ -1,30 +1,30 @@
-extends ../layout
+extends ../layout_noCache
 
 block content
-	//- We need to do .replace(/\//g, '\\/') do that '</script>' -> '<\/script>'
-	//- and doesn't prematurely end the script tag.
+  //- We need to do .replace(/\//g, '\\/') do that '</script>' -> '<\/script>'
+  //- and doesn't prematurely end the script tag.
 
 
 
-	script(type="text/javascript").
-		window.data = {
-			projects: !{JSON.stringify(projects).replace(/\//g, '\\/')},
-			tags: !{JSON.stringify(tags).replace(/\//g, '\\/')}
-		};
-		window.algolia = {
-			institutions: {
-				app_id:  '#{algolia_app_id}',
-				api_key: '#{algolia_api_key}'
-			}
-		};
+  script(type="text/javascript").
+    window.data = {
+      projects: !{JSON.stringify(projects).replace(/\//g, '\\/')},
+      tags: !{JSON.stringify(tags).replace(/\//g, '\\/')}
+    };
+    window.algolia = {
+      institutions: {
+        app_id:  '#{algolia_app_id}',
+        api_key: '#{algolia_api_key}'
+      }
+    };
 
-	.content.content-alt(ng-controller="ProjectPageController")
-		.container
-			.row
-				aside.col-md-2.col-xs-3
-					include ./list/side-bar
+  .content.content-alt(ng-controller="ProjectPageController")
+    .container
+      .row
+        aside.col-md-2.col-xs-3
+          include ./list/side-bar
 
-				.col-md-10.col-xs-9
-					include ./list/project-list
+        .col-md-10.col-xs-9
+          include ./list/project-list
 
-		include ./list/modals
+    include ./list/modals
