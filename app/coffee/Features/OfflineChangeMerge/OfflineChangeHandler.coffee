@@ -75,8 +75,8 @@ module.exports = OfflineChangeHandler =
   mergeAndIntegrate: (ofp, onp, callback = (mofp, monp, ofc, onc) -> ) ->
     # parameter dump
     console.log "PARAMETER DUMP: mergeAndIntegrate"
-    logFull "ofp", ofp
-    logFull "onp", onp
+    @logFull "ofp", ofp
+    @logFull "onp", onp
     
     # utilizing heavy iterative style here for efficiency
     # Assuming that the DMP context length is always 4 characters!
@@ -124,8 +124,8 @@ module.exports = OfflineChangeHandler =
 
     while (i < ofp.length || j < onp.length)
       console.log "BEGIN mergeAndIntegrate loop:"
-      logFull "i", i
-      logFull "j", j
+      @logFull "i", i
+      @logFull "j", j
     
       # TODO: use the main logger for this
       if currentOfflineConflict && currentOnlineConflict
@@ -241,10 +241,10 @@ module.exports = OfflineChangeHandler =
         ###
     
     console.log "OUTPUT DUMP: mergeAndIntegrate"
-    logFull "mofp", mofp
-    logFull "monp", monp
-    logFull "ofc",  ofc
-    logFull "onc",  onc
+    @logFull "mofp", mofp
+    @logFull "monp", monp
+    @logFull "ofc",  ofc
+    @logFull "onc",  onc
     callback(mofp, monp, ofc, onc)
 
   # TODO fix the offset
