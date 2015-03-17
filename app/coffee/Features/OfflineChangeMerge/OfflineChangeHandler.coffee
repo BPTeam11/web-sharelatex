@@ -79,8 +79,7 @@ module.exports = OfflineChangeHandler =
     @logFull "onp", onp
     
     # utilizing heavy iterative style here for efficiency
-    # Assuming that the DMP context length is always 4 characters!
-    cl = 4
+
     i = 0 # ofp iterator
     j = 0 # onp iterator
     
@@ -124,8 +123,8 @@ module.exports = OfflineChangeHandler =
 
     while (i < ofp.length || j < onp.length)
       console.log "BEGIN mergeAndIntegrate loop:"
-      @logFull "i", i
-      @logFull "j", j
+      console.log "i", i
+      console.log "j", j
     
       # TODO: use the main logger for this
       if currentOfflineConflict && currentOnlineConflict
@@ -134,17 +133,23 @@ module.exports = OfflineChangeHandler =
       # update offline patch bounds
       # if currentOfflineConflict, i did not change
       if (i < ofp.length && !currentOfflineConflict)
-        currentOfflinePatchStart = ofp[i].start1 + cl
+        currentOfflinePatchStart = ofp[i].start1 + ofp[i].diffs[0][1].length
         console.log "currentOfflinePatchStart", currentOfflinePatchStart
-        currentOfflinePatchEnd   = currentOfflinePatchStart + ofp[i].length1 - 1 - cl
+        currentOfflinePatchEnd =
+          ofp[i].start1 +
+          ofp[i].length1 - 1 -
+          ofp[i].diffs[ofp[i].diffs.length - 1][1].length
         console.log "currentOfflinePatchEnd", currentOfflinePatchEnd
       
       # update online patch bounds
       # if currentOnlineConflict, j did not change
       if (j < onp.length && !currentOnlineConflict)
-        currentOnlinePatchStart  = onp[j].start1 + cl
+        currentOnlinePatchStart  = onp[j].start1 + onp[j].diffs[0][1].length
         console.log "currentOnlinePatchStart", currentOnlinePatchStart
-        currentOnlinePatchEnd    = currentOnlinePatchStart + onp[j].length1 - 1 - cl
+        currentOnlinePatchEnd =
+          onp[j].start1 +
+          onp[j].length1 - 1 -
+          onp[j].diffs[onp[j].diffs.length - 1][1].length
         console.log "currentOnlinePatchEnd", currentOnlinePatchEnd
 
       # --- Checking for conflicts
