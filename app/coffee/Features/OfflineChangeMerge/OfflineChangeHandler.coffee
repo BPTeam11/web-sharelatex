@@ -125,30 +125,53 @@ module.exports = OfflineChangeHandler =
       console.log "BEGIN mergeAndIntegrate loop:"
       console.log "i", i
       console.log "j", j
+      
+      # checking for abbreviation
+      
+      # add remaining online patches
+      if (i == ofp.length)
+        for patch, index in onp when index >= j
+          patch.start1 += offlineOffset
+          patch.start2 += offlineOffset
+          monp.push patch
+        break # quit while loop
+      
+      # add remaining offline patches
+      if (j == onp.length)
+        for patch, index in ofp when index >= i
+          patch.start1 += onlineOffset
+          patch.start2 += onlineOffset
+          mofp.push patch
+        break # quit while loop
+        
+      # from now on this is true: (i < ofp.length && j < onp.length)
+      # which means that there can be no invalid array indexing
     
       # TODO: use the main logger for this
       if currentOfflineConflict && currentOnlineConflict
         console.log "ERROR: offline and online conflict! This should not happen!"
       
+      # TODO: maybe add +-1 environment bounds for contextual conflict detection
+      
       # update offline patch bounds
       # if currentOfflineConflict, i did not change
-      if (i < ofp.length && !currentOfflineConflict)
+      if !currentOfflineConflict
         currentOfflinePatchStart = ofp[i].start1 + ofp[i].diffs[0][1].length
         console.log "currentOfflinePatchStart", currentOfflinePatchStart
         currentOfflinePatchEnd =
           ofp[i].start1 +
-          ofp[i].length1 - 1 -
+          ofp[i].length1 -
           ofp[i].diffs[ofp[i].diffs.length - 1][1].length
         console.log "currentOfflinePatchEnd", currentOfflinePatchEnd
       
       # update online patch bounds
       # if currentOnlineConflict, j did not change
-      if (j < onp.length && !currentOnlineConflict)
+      if !currentOnlineConflict
         currentOnlinePatchStart  = onp[j].start1 + onp[j].diffs[0][1].length
         console.log "currentOnlinePatchStart", currentOnlinePatchStart
         currentOnlinePatchEnd =
           onp[j].start1 +
-          onp[j].length1 - 1 -
+          onp[j].length1 -
           onp[j].diffs[onp[j].diffs.length - 1][1].length
         console.log "currentOnlinePatchEnd", currentOnlinePatchEnd
 
@@ -163,8 +186,7 @@ module.exports = OfflineChangeHandler =
       ###
       
       # offlinePatch first, no conflict
-      # if we already merged all offline patches, this is not relevant
-      if (currentOfflinePatchEnd < currentOnlinePatchStart) && (i < ofp.length)
+      if (currentOfflinePatchEnd < currentOnlinePatchStart)
         # no conflict with upcoming online patch, but we need to clean up the old conflict first
         if currentOfflineConflict
           ofc.push ofp[i]
@@ -179,8 +201,7 @@ module.exports = OfflineChangeHandler =
           i++
       
       # onlinePatch first, no conflict
-      # if we already merged all online patches, this is not relevant
-      else if (currentOnlinePatchEnd < currentOfflinePatchStart) && (j < onp.length)
+      else if (currentOnlinePatchEnd < currentOfflinePatchStart)
         # no conflict with upcoming offline patch, but we need to clean up the old conflict first
         if currentOnlineConflict
           onc.push onp[j]
@@ -195,56 +216,45 @@ module.exports = OfflineChangeHandler =
           j++
 
       # otherwise, it's a conflict
-      else
-        console.log "There is a conflict"
-        # NOTE: You'll need to take care of offsets when merging later
+      # NOTE: You'll need to take care of offsets when merging later
         
-        # offline: ----- ???
-        # online:    -----
-        # --> There may be a conflict with offline later
-        if (currentOfflinePatchEnd < currentOnlinePatchEnd) && (i < ofp.length)
-          ofp[i].start1 += onlineOffset
-          ofp[i].start2 += onlineOffset
-          ofc.push ofp[i]
-          i++
-          currentOfflineConflict = false
-          currentOnlineConflict = true
-        
-        # offline:   -----
-        # online:  ----- ???
-        # --> There may be a conflict with online later
-        else if (currentOnlinePatchEnd < currentOfflinePatchEnd) && (j < onp.length)
-          onp[j].start1 += offlineOffset
-          onp[j].start2 += offlineOffset
-          onc.push onp[j]
-          j++
-          currentOnlineConflict = false
-          currentOfflineConflict = true
-        
-        # offline: -------- ???
-        # online:     ----- ???
-        # --> They have equal ends, no overlap with later patches possible
-        else
-          ofp[i].start1 += onlineOffset
-          ofp[i].start2 += onlineOffset
-          ofc.push ofp[i]
-          i++
-          currentOfflineConflict = false
-          onp[j].start1 += offlineOffset
-          onp[j].start2 += offlineOffset
-          onc.push onp[j]
-          j++
-          currentOnlineConflict = false
-        ###
-        else
-          # TODO: Use logger
-          console.log "Err ... Something somewhere went terribly wrong in mergeAndIntegrate. Contact a developer."
-          console.log "onp.length", onp.length
-          console.log "i", i
-          console.log "ofp.length", ofp.length
-          console.log "j", j
-        ###
+      # offline: ----- ???
+      # online:    -----
+      # --> There may be a conflict with offline later
+      else if (currentOfflinePatchEnd < currentOnlinePatchEnd)
+        ofp[i].start1 += onlineOffset
+        ofp[i].start2 += onlineOffset
+        ofc.push ofp[i]
+        i++
+        currentOfflineConflict = false
+        currentOnlineConflict = true
     
+      # offline:   -----
+      # online:  ----- ???
+      # --> There may be a conflict with online later
+      else if (currentOnlinePatchEnd < currentOfflinePatchEnd)
+        onp[j].start1 += offlineOffset
+        onp[j].start2 += offlineOffset
+        onc.push onp[j]
+        j++
+        currentOnlineConflict = false
+        currentOfflineConflict = true
+      
+      # offline: -------- ???
+      # online:     ----- ???
+      # --> They have equal ends, no overlap with later patches possible
+      else
+        ofp[i].start1 += onlineOffset
+        ofp[i].start2 += onlineOffset
+        ofc.push ofp[i]
+        i++
+        currentOfflineConflict = false
+        onp[j].start1 += offlineOffset
+        onp[j].start2 += offlineOffset
+        onc.push onp[j]
+        j++
+        currentOnlineConflict = false
+  
     console.log "OUTPUT DUMP: mergeAndIntegrate"
     @logFull "mofp", mofp
     @logFull "monp", monp
