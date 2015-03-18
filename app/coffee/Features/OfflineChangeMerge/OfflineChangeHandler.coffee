@@ -26,44 +26,80 @@ util = require('util');
   
 ###
 
-
 module.exports = OfflineChangeHandler =
   
   # let the "old document" be the document before a client went offline
   # doc: offline Document after the client made changes to it
 
-  # computeChange generates a list of changes that will try to apply
-  #   changes which were made to the old document offline
-  #   to the current document retroactively.
+  # mergedChange: A 'change' object that contains all offline changes that don't
+  #               produce a conflict. The server can immediately apply these.
+  #
+  # newVersion: Because the offline client has already applied his own changes,
+  #             this variable is here to tell the client up to which doc version
+  #             he should ignore incoming updates.
+  #
+  # clientMergeOps: Operations that are supplied to the previously offline
+  #                 client to reflect online changes
+  #
+  # ofc: DMP-patches from offline changes that conflict with online changes.
+  #      Updated positions to correspond to newVersion
+  #
+  # onc: DMP-patches from online changes that conflict with offline changes.
+  #      Updated positions to correspond to newVersion
+  #
+  mergeWhenPossible: (project_id, user_id, sessionId, doc, callback =
+    (mergedChange, clientMergeOps, newVersion, ofc, onc) ->)->
 
-  # TODO: what if that was not successful?
-  computeChange: (project_id, user_id, sessionId, doc, callback = (project_id, doc_id, change, clientMergeOps, newVersion) ->)->
+      console.log "MergeHandler here :)  Old version:"
+      console.log doc.version
 
-    console.log "MergeHandler here :)  Old version:"
-    console.log doc.version
+      @getDocumentText project_id, doc.doc_id, doc.version,
+        (oldDocText, onlineDocText, onlineVersion) =>
+          @getPatches oldDocText, doc.doclines.join('\n'), onlineDocText,
+            (ofp, onp) =>
+              @mergeAndIntegrate ofp, onp, (mofp, monp, ofc, onc) =>
+                # operations that can be used on the client side to transform 
+                # the onlineDoc into the merged version
+                clientMergeOps  = @convertPatchesToOps monp
+                # operations that can be used on the server side to transform 
+                # the offlineDoc into the merged version
+                serverMergeOps = @convertPatchesToOps mofp
+                # ignore conflicts for now
+                # this may be splitted up into single ops:
+                mergedChange = {
+                  doc: doc.doc_id
+                  op: serverMergeOps
+                  v : onlineVersion
+                  meta : {
+                    source: sessionId
+                    user_id: user_id
+                  }
+                }
+                
+                callback mergedChange, clientMergeOps,
+                  onlineVersion + serverMergeOps.length,
+                  ofc, onc
+  
+  # 
+  
+  # this function should maybe moved to a different place ...?
+  # good location may be a "ConflictHandler" module.
+  #
+  # This function inserts braces ((...)) around conflicting changes.
+  # It is a proof-of-concept instead of real conflict resolution
+  insertConflictBraces: (conflictPatches) ->
+    for patch in conflictPatches
 
-    @getDocumentText project_id, doc.doc_id, doc.version, (oldDocText, onlineDocText, onlineVersion) =>
-      @getPatches oldDocText, doc.doclines.join('\n'), onlineDocText, (ofp, onp) =>
-        @mergeAndIntegrate ofp, onp, (mofp, monp, ofc, onc) =>
-          # operations that can be used on the client side to transform the 
-          # onlineDoc into the merged version
-          clientMergeOps  = @convertPatchesToOps monp
-          # operations that can be used on the server side to transform the
-          # offlineDoc into the merged version
-          serverMergeOps = @convertPatchesToOps mofp
-          # ignore conflicts for now
-          # this may be splitted up into single ops:
-          change = {
-            doc: doc.doc_id
-            op: serverMergeOps
-            v : onlineVersion
-            meta : {
-              source: sessionId
-              user_id: user_id
-            }
-          }
-          
-          callback project_id, doc.doc_id, change, clientMergeOps, onlineVersion + serverMergeOps.length
+      # push "((" as the first insert before the first original change
+      patch.diffs.splice(1, 0, [ 1, "((" ])
+      
+      # push "))" as the last insert after the last original change
+      l = patch.diffs.length
+      patch.diffs.splice(l-1, 0, [ 1, "))" ])
+      
+      patch.length2 += 4
+    
+    return conflictPatches
   
   ###
     offline- and online-Patch need to be sorted
@@ -114,7 +150,7 @@ module.exports = OfflineChangeHandler =
     
     # from now on, ofp and onp are non-empty
     
-    # these values say whether
+    # these values say, when true, that:
     # 1.) the current off/online index did not change since last iteration
     # 2.) the according patch conflicted with a previous patch, which means
     #     that we want to add it to the ofc/onc array at a later point.
@@ -262,10 +298,6 @@ module.exports = OfflineChangeHandler =
     @logFull "onc",  onc
     callback(mofp, monp, ofc, onc)
 
-  # TODO fix the offset
-  # this function relies on the fact that the patches have already been updated
-  # to respect previous changes inside the patch, thus shifting the position
-  # forward or backward. (as done by mergeAndIntegrate)
   convertPatchesToOps: (patches) ->
     ops = []
     for patch in patches
