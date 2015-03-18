@@ -47,8 +47,8 @@ module.exports = OfflineChangeHandler =
   # onc: DMP-patches from online changes that conflict with offline changes.
   #      Updated positions to correspond to newVersion
   #
-  mergeWhenPossible: (project_id, user_id, sessionId, doc, callback =
-    (mergedChange, clientMergeOps, newVersion, ofc, onc) ->)->
+  mergeWhenPossible: (project_id, user_id, sessionId, doc,
+    callback = (mergedChange, clientMergeOps, newVersion, ofc, onc) ->)->
 
       console.log "MergeHandler here :)  Old version:"
       console.log doc.version
