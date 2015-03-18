@@ -80,8 +80,6 @@ module.exports = OfflineChangeHandler =
                   onlineVersion + serverMergeOps.length,
                   ofc, onc
   
-  # 
-  
   # this function should maybe moved to a different place ...?
   # good location may be a "ConflictHandler" module.
   #
