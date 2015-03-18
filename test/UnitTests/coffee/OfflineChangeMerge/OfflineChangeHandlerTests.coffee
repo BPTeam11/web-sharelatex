@@ -24,9 +24,48 @@ describe "OfflineChangeHandler", ->
 
     @project_id = "project-id-123"
     @doc_id = "doc-id-123"
+    @user_id = "1234"
+    @sessionId = "1234"
     @version = 42
     @callback = sinon.spy()
+  
+  describe "mergeAndIntegrate", ->
+    beforeEach ->
+    
+    describe "when there is a conflict", ->
+      beforeEach ->
+        @oldDocText     = "aaaa"
+        @offlineDocText = "aabbaa"
+        @onlineDocText  = ""
+        @doc = {
+          version: 42
+          doc_id: "doc-id-123"
+          doclines: @offlineDocText
+          }
+        @ofp = [ {
+          diffs: [ [ 1, 'bb' ] ],
+          start1: 2,
+          start2: 2,
+          length1: 0,
+          length2: 2 } ]
+        @onp = [ {
+          diffs: [ [ -1, 'aaaa' ] ],
+          start1: 0,
+          start2: 0,
+          length1: 4,
+          length2: 0 } ]
+        @OfflineChangeHandler.getDocumentText =
+          sinon.stub().callsArgWith(@oldDocText, @onlineDocText, @version)
+        
+    
+    it "should insert merge braces", ->
+      console.log @oldDocText
+      @OfflineChangeHandler
+        .mergeWhenPossible @project_id, @user_id, @sessionId, @doc,
+          @callback
+      true.should.equal true
 
+  ###
   describe "getDocumentText", ->
     beforeEach ->
 
@@ -82,3 +121,4 @@ describe "OfflineChangeHandler", ->
         result = @OfflineChangeHandler.reverseOp(@docTextafterOp, {p:7, 'd': "<this> "})
         #console.log result
         result.should.equal @docTextbeforeOp
+  ###

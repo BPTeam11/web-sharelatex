@@ -216,12 +216,12 @@ module.exports = EditorController =
 		logger.log {project_id, doc_id, version}, "merging doc"	
 
 		OfflineChangeHandler.mergeWhenPossible project_id, user_id, sessionId, doc,
-		  (mergedChange, clientMergeOps, newVersion, ofc, onc) =>
+		  (mergedChange, clientMergeOps, newVersion) =>
 
 			  # TODO maybe (dunno if this is a big problem): make sure the pending
 			  # queue is empty so that no updates are insserted while changes are
 			  # computed -> lock the queue
-			  DocumentUpdaterHandler.queueChange project_id, doc_id, change, (err)  ->
+			  DocumentUpdaterHandler.queueChange project_id, doc_id, mergedChange, (err)  ->
 				  callback(err) if err?
 				  console.log "clientMergeOps", clientMergeOps
 				  callback err, clientMergeOps, newVersion
