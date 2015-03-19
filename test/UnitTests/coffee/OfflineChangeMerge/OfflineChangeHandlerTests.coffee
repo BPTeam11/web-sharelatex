@@ -29,52 +29,83 @@ describe "OfflineChangeHandler", ->
     @version = 42
     @callback = sinon.spy()
   
+  ###
   describe "patchMake", ->
     it "should", ->
-      console.log "offline patch"
-      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaa", "es war einmal ein kleiner zaun zzaabbaa")
-      console.log "online patch"
-      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaa", "es einmal ein kleiner zaun zz")
-      
+      console.log "offline patch:"
+      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaaxx", "es war einmal ein kleiner zaun zzaabbaaxx")
+      console.log "online patch:"
+      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaaxx", "es einmal ein kleiner zaun zzxx")
+  ###  
   
   
   describe "mergeAndIntegrate", ->
     beforeEach ->
+      console.log ""
+      console.log ""
     
-    describe "when there is a conflict", ->
+    describe "when there is a simple conflict without context", ->
       beforeEach ->
         
-        @OfflineChangeHandler.getDocumentText =
-          sinon.stub().callsArgWith(@oldDocText, @onlineDocText, @version)
+        @oldDocText     = "aaaa"
+        @offlineDocText = "aabbaa"
+        @onlineDocText  = ""
         
-    
-    it "should insert merge braces", ->
-      #console.log @oldDocText
-      #@OfflineChangeHandler
-      #  .mergeWhenPossible @project_id, @user_id, @sessionId, @doc,
-      #    @callback
-      #true.should.equal true
-      @oldDocText     = "es war einmal ein kleiner zaun zzaaaa"
-      @offlineDocText = "es war einmal ein kleiner zaun zzaabbaa"
-      @onlineDocText  = "es einmal ein kleiner zaun zz"
-      @doc = {
-        version: 42
-        doc_id: "doc-id-123"
-        doclines: @offlineDocText
-        }
-      @ofp = [ {
-        diffs: [ [ 0, 'aun zzaa' ], [ 1, 'bb' ], [ 0, 'aa' ] ],
-        start1: 27,
-        start2: 27,
-        length1: 10,
-        length2: 12,
-        end1: 36,
-        end2: 38,
-        offset: 2,
-        context1: 8,
-        context2: 2 } ]
-      @onp = [
-        {
+        console.log "oldDocText:", @oldDocText
+        console.log "offlineText:", @offlineDocText
+        console.log "onlineText:", @onlineDocText
+        
+        @ofp = [ {
+          diffs: [ [ 0, 'aa' ], [ 1, 'bb' ], [ 0, 'aa' ] ],
+          start1: 0,
+          start2: 0,
+          length1: 4,
+          length2: 6,
+          end1: 3,
+          end2: 5,
+          offset: 2,
+          context1: 2,
+          context2: 2 } ]
+        @onp = [ {
+          diffs: [ [ -1, 'aaaa' ] ],
+          start1: 0,
+          start2: 0,
+          length1: 4,
+          length2: 0,
+          end1: 3,
+          end2: -1,
+          offset: -4,
+          context1: 0,
+          context2: 0 } ]
+      
+      it "should insert merge braces", ->
+        
+        @OfflineChangeHandler.mergeAndIntegrate @offlineDocText, @onlineDocText, @ofp, @onp,
+          @callback
+          
+    describe "when there is a simple conflict with context", ->
+      beforeEach ->
+
+        @oldDocText     = "es war einmal ein kleiner zaun zzaaaaxx"
+        @offlineDocText = "es war einmal ein kleiner zaun zzaabbaaxx"
+        @onlineDocText  = "es einmal ein kleiner zaun zzxx"
+        
+        console.log "oldDocText:", @oldDocText
+        console.log "offlineText:", @offlineDocText
+        console.log "onlineText:", @onlineDocText
+        
+        @ofp = [ {
+          diffs: [ [ 0, 'aun zzaa' ], [ 1, 'bb' ], [ 0, 'aaxx' ] ],
+          start1: 27,
+          start2: 27,
+          length1: 12,
+          length2: 14,
+          end1: 38,
+          end2: 40,
+          offset: 2,
+          context1: 8,
+          context2: 4 } ]
+        @onp = [ {
           diffs: [ [ 0, 'es ' ], [ -1, 'war ' ], [ 0, 'einm' ] ],
           start1: 0,
           start2: 0,
@@ -86,19 +117,21 @@ describe "OfflineChangeHandler", ->
           context1: 3,
           context2: 4 },
         {
-          diffs: [ [ 0, 'n zz' ], [ -1, 'aaaa' ] ],
+          diffs: [ [ 0, 'n zz' ], [ -1, 'aaaa' ], [ 0, 'xx' ] ],
           start1: 29,
           start2: 25,
-          length1: 8,
-          length2: 4,
-          end1: 36,
-          end2: 28,
+          length1: 10,
+          length2: 6,
+          end1: 38,
+          end2: 30,
           offset: -4,
           context1: 4,
-          context2: 0 } ]
-      @OfflineChangeHandler.mergeAndIntegrate @offlineDocText, @onlineDocText, @ofp, @onp,
-        @callback
-  
+          context2: 2 } ]
+      
+      it "should insert merge braces", ->
+        @OfflineChangeHandler.mergeAndIntegrate @offlineDocText, @onlineDocText, @ofp, @onp,
+          @callback
+    
   ###
   describe "getDocumentText", ->
     beforeEach ->

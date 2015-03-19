@@ -100,9 +100,9 @@ module.exports = OfflineChangeHandler =
   mergeAndIntegrate: (offlineDocText, onlineDocText, ofp, onp,
     callback = (opsForOnline, opsForOffline) -> ) ->
 
-      console.log "PARAMETER DUMP: mergeAndIntegrate"
-      @logFull "ofp", ofp
-      @logFull "onp", onp
+      #console.log "PARAMETER DUMP: mergeAndIntegrate"
+      #@logFull "ofp", ofp
+      #@logFull "onp", onp
       
       # utilizing heavy iterative style here for efficiency
 
@@ -149,7 +149,7 @@ module.exports = OfflineChangeHandler =
       # the invariant here is that all patches <i and <j have been successfully
       # merged.
       while (i < ofp.length || j < onp.length)
-        console.log "BEGIN mergeAndIntegrate loop:"
+        #console.log "BEGIN mergeAndIntegrate loop:"
         #console.log "i", i
         #console.log "j", j
         
@@ -224,12 +224,12 @@ module.exports = OfflineChangeHandler =
             onp[j].start2 - (onp[j].start1 - ofp[i].start1))
           onlineAreaEnd = @max(onp[j].end2,
             onp[j].end2 + (ofp[i].end1 - onp[j].end1))
-          
+          ###
           console.log "offlineAreaStart", offlineAreaStart
           console.log "offlineAreaEnd", offlineAreaEnd
           console.log "onlineAreaStart", onlineAreaStart
           console.log "onlineAreaEnd", onlineAreaEnd
-          
+          ###
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
