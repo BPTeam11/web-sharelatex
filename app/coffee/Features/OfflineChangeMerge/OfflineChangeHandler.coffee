@@ -61,66 +61,24 @@ module.exports = OfflineChangeHandler =
   #      Updated positions to correspond to newVersion
   #
   mergeWhenPossible: (project_id, user_id, sessionId, doc,
-    callback = (mergedChange, clientMergeOps, newVersion, ofc, onc) ->)->
+    callback = (mergedChange, clientMergeOps, newVersion) ->)->
 
       console.log "MergeHandler here :)  Old version:"
       console.log doc.version
-
+      
+      offlineDocText = doc.doclines.join('\n')
       @getDocumentText project_id, doc.doc_id, doc.version,
         (oldDocText, onlineDocText, onlineVersion) =>
-          @getPatches oldDocText, doc.doclines.join('\n'), onlineDocText,
+          @getPatches oldDocText, offlineDocText, onlineDocText,
             (ofp, onp) =>
-              @mergeAndIntegrate ofp, onp, (opsForOnline, opsForOffline, ofc, onc) =>
-              
-                # conflicts are still relative to oldDoc
-                ###
-                opsForOffline = [] # unbalanced
-                opsForOnline  = [] # unbalanced
-                
-                for conflict in onp
-                  opsForOnline.push {
-                    p: conflict.start1
-                    i: "((" }
-                  opsForOnline.push {
-                    p: conflict.start1 + conflict.length
-                    i: "))"
+              @mergeAndIntegrate offlineDocText, onlineDocText, ofp, onp,
+                (opsForOnline, opsForOffline) =>
 
-                  # insert the result of the conflicting patch into offline doc
-                  opsForOffline.push {
-                    p: conflict.start1, # before the offline change
-                    i: "((" + onlineDocText[conflict.start2..
-                      conflict.start2 + conflict.length2 - 1] + "))"
-                
-                for conflict in ofc
-                  opsForOffline.push {
-                    p: conflict.start1
-                    i: "((" }
-                  opsForOffline.push {
-                    p: conflict.start1 + conflict.length
-                    i: "))"
-                    
-                  # insert the result of the conflicting patch into online doc
-                  opsForOnline.push [
-                    p: ?? # after the online change
-                
-                ###
-                ConflictHandler.instantMerge oldDocText, opsForOnline, opsForOffline, ofc, onc,
-                  (opsForOnline, opsForOffline) =>
-              
-              
-              
-            
-                  # operations that can be used on the client side to transform 
-                  # the onlineDoc into the merged version
-                  clientMergeOps  = @convertPatchesToOps opsForOffline
-                  # operations that can be used on the server side to transform 
-                  # the offlineDoc into the merged version
-                  serverMergeOps = @convertPatchesToOps opsForOnline
                   # ignore conflicts for now
                   # this may be splitted up into single ops:
                   mergedChange = {
                     doc: doc.doc_id
-                    op: serverMergeOps
+                    op: opsForOnline
                     v : onlineVersion
                     meta : {
                       source: sessionId
@@ -128,10 +86,10 @@ module.exports = OfflineChangeHandler =
                     }
                   }
                   
-                  callback mergedChange, clientMergeOps,
-                    onlineVersion + serverMergeOps.length,
-                    ofc, onc
-  
+                  @logFull "mergedChange", mergedChange
+                  callback mergedChange, opsForOffline,
+                    onlineVersion + opsForOnline.length
+    
   ###
     offline- and online-Patch need to be sorted
     ofc and onc do not necessarily have the same length
@@ -139,211 +97,238 @@ module.exports = OfflineChangeHandler =
     merging the patches and adding up offsets ("integrating"), then splitting
     the results into dedicated arrays. These things are best done in one loop.
   ###
-  mergeAndIntegrate: (ofp, onp, callback = (opsForOnline, opsForOffline, ofc, onc) -> ) ->
-    # parameter dump
-    console.log "PARAMETER DUMP: mergeAndIntegrate"
-    @logFull "ofp", ofp
-    @logFull "onp", onp
-    
-    # utilizing heavy iterative style here for efficiency
+  mergeAndIntegrate: (offlineDocText, onlineDocText, ofp, onp,
+    callback = (opsForOnline, opsForOffline) -> ) ->
 
-    i = 0 # ofp iterator
-    j = 0 # onp iterator
-    
-    # merged online patches
-    opsForOffline = []
-    
-    # merged offline patches
-    opsForOnline = []
-    
-    # offline conflicts
-    #ofc = []
-    
-    # online conflicts
-    #onc = []
-    
-    # current offsets from the original online/offline document, either by
-    # successful merging inserts or by conflict inserts "((..))"
-    # Because start1 always refers to oldDoc, these offsets can only be applied
-    # to start2. Also note that start2 already reflects offsets from oldDoc
-    # to the original online/offline document
-    offlineOffset = 0
-    onlineOffset  = 0
-    
-    # if both ofp and onp are empty, there are no merges and no conflicts
-    if (ofp.length == onp.length == 0)
-      console.log "mergeAndIntegrate: Got two empty patches"
-      return callback([], [], [], [])
-    
-    # if ofp is empty (but not onp), merges are simply the onp, no conflicts
-    else if (ofp.length == 0)
-      console.log "mergeAndIntegrate: offlinePatches is empty"
-      return callback([], onp, [], [])
-    
-    # if onp is empty (but not ofp), merges are simply the ofp, no conflicts
-    else if (onp.length == 0)
-      console.log "mergeAndIntegrate: onlinePatches is empty"
-      return callback(ofp, [], [], [])
-    
-    # from now on, ofp and onp are non-empty
-    
-    # these values say, when true, that:
-    # 1.) the current off/online index did not change since last iteration
-    # 2.) the according patch conflicted with a previous patch, which means
-    #     that we want to add it to the ofc/onc array at a later point.
-    # The scenario these are for could be called "multi-conflict", like
-    ###
-      offline: --- ---
-      online:    --- ---
-      conflict:  ^ ^ ^
-    ###
-    # In this case, both sides will be interpreted as one long conflict.
-    currentOfflineConflict = false
-    currentOnlineConflict  = false
-    # these positions point to the start of the current multi-conflict
-    currentOfflineConflictStart = 0
-    currentOnlineConflictStart  = 0
-    # the 'end' is always the end of the current patch
-    
-    # the invariant here is that all patches <i and <j have been successfully
-    # merged.
-    while (i < ofp.length || j < onp.length)
-      console.log "BEGIN mergeAndIntegrate loop:"
-      console.log "i", i
-      console.log "j", j
+      console.log "PARAMETER DUMP: mergeAndIntegrate"
+      @logFull "ofp", ofp
+      @logFull "onp", onp
       
-      # checking for abbreviation
-      
-      # add remaining online patches
-      if (i == ofp.length)
-        for patch, index in onp when index >= j
-          patch.start2 += offlineOffset
-          opsForOffline.push @patch2ops(patch)...
-        break # quit while loop
-      
-      # add remaining offline patches
-      if (j == onp.length)
-        for patch, index in ofp when index >= i
-          patch.start2 += onlineOffset
-          opsForOnline.push @patch2ops(patch)...
-        break # quit while loop
-        
-      # from now on, (i < ofp.length) and (j < onp.length)
-      # which means that there can be no invalid array indexing
-      
-      # update offline patch bounds
-      originalOfflinePatchStart = ofp[i].start1
-      originalOfflinePatchEnd   = ofp[i].start1 + ofp[i].length1 - 1
-      currentOfflinePatchStart  = ofp[i].start2
-      currentOfflinePatchEnd    = ofp[i].start2 + ofp[i].length2 - 1
-      
-      # update online patch bounds
-      originalOnlinePatchStart = onp[j].start1
-      originalOnlinePatchEnd   = onp[j].start1 + onp[j].length1 - 1
-      currentOnlinePatchStart  = onp[j].start2
-      currentOnlinePatchEnd    = onp[j].start2 + onp[j].length2 - 1
+      # utilizing heavy iterative style here for efficiency
 
-      # --- Checking for conflicts
+      i = 0 # ofp iterator
+      j = 0 # onp iterator
+      
+      # merged online patches
+      opsForOffline = []
+      
+      # merged offline patches
+      opsForOnline = []
+      
+      # current offsets from the original online/offline document, either by
+      # successful merging inserts or by conflict inserts "((..))"
+      # Because start1 always refers to oldDoc, these offsets can only be applied
+      # to start2. Also note that start2 already reflects offsets from oldDoc
+      # to the original online/offline document
+      offlineOffset = 0
+      onlineOffset  = 0
+      
+      # if both ofp and onp are empty, there are no merges and no conflicts
+      if (ofp.length == onp.length == 0)
+        console.log "mergeAndIntegrate: Got two empty patches"
+        return callback([], [], [], [])
       ###
-        The general idea is that we operate on the patch with the lower position first.
-        If there is a conflict, we keep the patch with a higher position in mind to check if
-        there are are any later conflicting changes coming. Because the patches
-        from DMP are sorted by default, once we find that the next higher patch
-        does *not* conflict, we can be sure that none of the later patches will
-        conflict.
+      # if ofp is empty (but not onp), merges are simply the onp, no conflicts
+      else if (ofp.length == 0)
+        console.log "mergeAndIntegrate: offlinePatches is empty"
+        return callback([], onp, [], [])
+      
+      # if onp is empty (but not ofp), merges are simply the ofp, no conflicts
+      else if (onp.length == 0)
+        console.log "mergeAndIntegrate: onlinePatches is empty"
+        return callback(ofp, [], [], [])
       ###
+      # from now on, ofp and onp are non-empty
       
-      # offlinePatch first, no conflict
-      if (originalOfflinePatchEnd < originalOnlinePatchStart)
-        # no conflict with upcoming online patch, but we need to clean up the old conflict first
-        if currentOfflineConflict
-          ofc.push ofp[i]
-          i++
-          currentOfflineConflict = false
-        else
-          # integrate offlinePatch
-          ofp[i].start2 += onlineOffset
-          onlineOffset  += ofp[i].length2 - ofp[i].length1
-          opsForOnline.push @patch2ops(ofp[i])...
-          i++
+      # these values say, when true, that:
+      # 1.) the current off/online index did not change since last iteration
+      # 2.) the according patch conflicted with a previous patch, which means
+      #     that we want to add it to the ofc/onc array at a later point.
+      # The scenario these are for could be called "multi-conflict", like
+      ###
+        offline: --- ---
+        online:    --- ---
+        conflict:  ^ ^ ^
+      ###
+      # In this case, both sides will be interpreted as one long conflict.
+      currentOfflineConflict = false
+      currentOnlineConflict  = false
+      # these positions point to the start of the current multi-conflict
+      currentOfflineConflictStart = 0
+      currentOnlineConflictStart  = 0
+      # the 'end' is always the end of the current patch
       
-      # onlinePatch first, no conflict
-      else if (originalOnlinePatchEnd < originalOfflinePatchStart)
-        # no conflict with upcoming offline patch, but we need to clean up the old conflict first
-        if currentOnlineConflict
-          onc.push onp[j]
-          j++
-          currentOnlineConflict = false
-        else
-          # integrate onlinePatch
-          onp[j].start2 += offlineOffset
-          offlineOffset += onp[j].length2 - onp[j].length1
-          opsForOffline.push @patch2ops(onp[j])...
-          j++
+      # the invariant here is that all patches <i and <j have been successfully
+      # merged.
+      while (i < ofp.length || j < onp.length)
+        console.log "BEGIN mergeAndIntegrate loop:"
+        console.log "i", i
+        console.log "j", j
+        
+        # checking for abbreviation
+        
+        # add remaining online patches
+        if (i == ofp.length)
+          for patch, index in onp when index >= j
+            patch.start2 += offlineOffset
+            opsForOffline.push @patch2ops(patch)...
+          break # quit while loop
+        
+        # add remaining offline patches
+        if (j == onp.length)
+          for patch, index in ofp when index >= i
+            patch.start2 += onlineOffset
+            opsForOnline.push @patch2ops(patch)...
+          break # quit while loop
+          
+        # from now on, (i < ofp.length) and (j < onp.length)
+        # which means that there can be no invalid array indexing
+        
+        # update offline patch bounds
+        originalOfflinePatchStart = ofp[i].start1
+        originalOfflinePatchEnd   = ofp[i].start1 + ofp[i].length1 - 1
+        currentOfflinePatchStart  = ofp[i].start2
+        currentOfflinePatchEnd    = ofp[i].start2 + ofp[i].length2 - 1
+        
+        # update online patch bounds
+        originalOnlinePatchStart = onp[j].start1
+        originalOnlinePatchEnd   = onp[j].start1 + onp[j].length1 - 1
+        currentOnlinePatchStart  = onp[j].start2
+        currentOnlinePatchEnd    = onp[j].start2 + onp[j].length2 - 1
 
-      # otherwise, it's a conflict
+        # --- Checking for conflicts
+        ###
+          The general idea is that we operate on the patch with the lower position first.
+          If there is a conflict, we keep the patch with a higher position in mind to check if
+          there are are any later conflicting changes coming. Because the patches
+          from DMP are sorted by default, once we find that the next higher patch
+          does *not* conflict, we can be sure that none of the later patches will
+          conflict.
+        ###
         
-      # offline: ----- ???
-      # online:    -----
-      # --> There may be a conflict with online later
-      else if (originalOfflinePatchEnd < originalOnlinePatchEnd)
+        # offlinePatch first, no conflict
+        if (originalOfflinePatchEnd < originalOnlinePatchStart)
+            # integrate offlinePatch
+            ofp[i].start2 += onlineOffset
+            onlineOffset  += ofp[i].length2 - ofp[i].length1
+            offlineOffset += ofp[i].length2 - ofp[i].length1
+            opsForOnline.push @patch2ops(ofp[i])...
+            i++
+        
+        # onlinePatch first, no conflict
+        else if (originalOnlinePatchEnd < originalOfflinePatchStart)
+            # integrate onlinePatch
+            onp[j].start2 += offlineOffset
+            offlineOffset += onp[j].length2 - onp[j].length1
+            onlineOffset  += onp[j].length2 - onp[j].length1
+            opsForOffline.push @patch2ops(onp[j])...
+            j++
+
+        # otherwise, it's a conflict
+        # Imagine a conflict is a conflict is a conflict ... then this code works.
+        # There are no overlapping conflicts handled here. Go look somewhere else.
+        
+        else
+          ###
+          # when the conflicting patch starts lower, include that context
+          onlineMin = @min(currentOnlinePatchStart,  currentOnlinePatchStart -
+            (originalOnlinePatchStart - originalOfflinePatchStart))
+          
+          # when the conflicting patch ends higher, include that context
+          onlineMax = @max(currentOnlinePatchEnd, currentOnlinePatchEnd +
+            (originalOfflinePatchEnd - originalOnlinePatchEnd))
+          
+          offlineMin = @min(currentOfflinePatchStart, currentOfflinePatchStart -
+            (originalOfflinePatchStart - originalOnlinePatchStart))
+          
+          offlineMax = @max(currentOfflinePatchEnd, currentOfflinePatchEnd +
+            (originalOnlinePatchEnd - originalOfflinePatchEnd))
+          
+          console.log onlineMin, onlineMax, offlineMin, offlineMax
+          console.log currentOfflinePatchStart, offlineOffset
+          ###
+          
+          ###
+            Client side handling
+          ###
+          
+          # insert begin tag
+          opsForOffline.push {
+            p: currentOfflinePatchStart + offlineOffset,
+            i: conflictBegin }
+          offlineOffset += conflictBegin.length
+          
+          # insert online alternative
+          onlineAlternative = 
+            onlineDocText[currentOnlinePatchStart .. currentOnlinePatchEnd]
+          opsForOffline.push {
+            p: currentOfflinePatchStart + offlineOffset,
+            i: onlineAlternative }
+          offlineOffset += onlineAlternative.length
+          
+          # insert end tag
+          opsForOffline.push {
+            p: currentOfflinePatchStart + offlineOffset,
+            i: conflictEnd }
+          offlineOffset += conflictEnd.length
+          
+          # insert braces around offline conflict
+          # insert begin tag
+          opsForOffline.push {
+            p: currentOfflinePatchStart + offlineOffset,
+            i: conflictBegin }
+          offlineOffset += conflictBegin.length
+          
+          # insert end tag
+          opsForOffline.push {
+            p: currentOfflinePatchEnd + offlineOffset + 1,
+            i: conflictEnd }
+          offlineOffset += conflictEnd.length
+          
+          ###
+            Server side handling
+          ###
+          
+          # insert begin tag
+          opsForOnline.push {
+            p: currentOnlinePatchStart + onlineOffset,
+            i: conflictBegin }
+          onlineOffset += conflictBegin.length
+          
+          # insert end tag
+          opsForOnline.push {
+            p: currentOnlinePatchEnd + onlineOffset + 1,
+            i: conflictEnd }
+          onlineOffset += conflictEnd.length
+          
+          # insert begin tag
+          opsForOnline.push {
+            p: currentOnlinePatchEnd + onlineOffset + 1,
+            i: conflictBegin }
+          onlineOffset += conflictBegin.length
+          
+          # insert offline alternative
+          offlineAlternative = 
+            offlineDocText[currentOfflinePatchStart .. currentOfflinePatchEnd]
+          opsForOnline.push {
+            p: currentOnlinePatchEnd + onlineOffset + 1,
+            i: offlineAlternative }
+          onlineOffset += offlineAlternative.length
+          
+          # insert end tag
+          opsForOnline.push {
+            p: currentOnlinePatchEnd + onlineOffset + 1,
+            i: conflictEnd }
+          onlineOffset += conflictEnd.length
+          
+          i++
+          j++
       
-        # insert online alternative
-        # insert begin tag
-        opsForOffline.push {p: currentOfflinePatchStart, i: conflictBegin}
-        offlineOffset += conflictBegin.length
-        
-        onlineAlternative = 
-          onlineDocText[currentOnlinePatchStart .. currentOnlinePatchEnd]
-        opsForOffline.push {
-          p: currentOfflinePatchStart + conflictBegin.length,
-          i: onlineAlternative }
-        offlineOffset += onlineAlternative.length
-        
-        # insert end tag
-        opsForOffline.push {p: currentOfflinePatchEnd + 1, i: conflictEnd}
-        offlineOffset += conflictEnd.length
-        
-        # insert braces around offline conflict
-        
-        ofp[i].start2 += onlineOffset
-        ofc.push ofp[i]
-        i++
-        currentOfflineConflict = false
-        currentOnlineConflict = true
     
-      # offline:   -----
-      # online:  ----- ???
-      # --> There may be a conflict with offline later
-      else if (originalOnlinePatchEnd < originalOfflinePatchEnd)
-        onp[j].start1 += offlineOffset
-        #onp[j].start2 += offlineOffset
-        onc.push onp[j]
-        j++
-        currentOnlineConflict = false
-        currentOfflineConflict = true
-      
-      # offline: -------- ???
-      # online:     ----- ???
-      # --> They have equal ends, no overlap with later patches possible
-      else
-        ofp[i].start1 += onlineOffset
-        #ofp[i].start2 += onlineOffset
-        ofc.push ofp[i]
-        i++
-        currentOfflineConflict = false
-        onp[j].start1 += offlineOffset
-        #onp[j].start2 += offlineOffset
-        onc.push onp[j]
-        j++
-        currentOnlineConflict = false
-  
-    console.log "OUTPUT DUMP: mergeAndIntegrate"
-    @logFull "opsForOnline", opsForOnline
-    @logFull "opsForOffline", opsForOffline
-    @logFull "ofc",  ofc
-    @logFull "onc",  onc
-    callback(opsForOnline, opsForOffline, ofc, onc)
+      console.log "OUTPUT DUMP: mergeAndIntegrate"
+      @logFull "opsForOnline", opsForOnline
+      @logFull "opsForOffline", opsForOffline
+      callback(opsForOnline, opsForOffline)
 
   patch2ops: (patch) ->
     ops = []
@@ -372,9 +357,7 @@ module.exports = OfflineChangeHandler =
     onp = @patchMake(oldDocText, onlineDocText)
     callback(ofp, onp)
 
-  # this is a wrapper for dmp.patch_make that ...
-  #   1. sets a correct start2 value
-  #   2. strips the beginning and end context away because we don't need it
+  # this is a wrapper for dmp.patch_make that will set correct start2 values
   patchMake: (oldText, newText) ->
     # If this is smaller then the algorithm is more careful.
     # For high Threshold it will override even if there's a confilct.
@@ -383,24 +366,6 @@ module.exports = OfflineChangeHandler =
     @logFull "DMP patches", patches
     offset = 0
     for patch in patches
-      
-      # save context lengths
-      startContext = patch.diffs[0][1].length
-      endContext   = patch.diffs[patch.diffs.length - 1][1].length
-      
-      # strip start context
-      patch.diffs.splice(0, 1)
-      # update start values
-      patch.start1 += startContext
-      patch.start2 += startContext
-      
-      # strip end context
-      patch.diffs.splice(patch.diffs.length - 1, 1)
-      
-      # update length values
-      patch.length1 -= startContext + endContext
-      patch.length2 -= startContext + endContext
-      
       # make start2 respect previous patches
       patch.start2 += offset
       offset += patch.length2 - patch.length1
@@ -455,6 +420,18 @@ module.exports = OfflineChangeHandler =
     else if(op.d?)
       changedDoc = strInject docText, op.p, op.d
     changedDoc
+  
+  min: (a, b) ->
+    if (a < b)
+      return a
+    else
+      return b
+  
+  max: (a, b) ->
+    if (a > b)
+      return a
+    else
+      return b
   
   logFull: (description, myObject) ->
     console.log description, "=", util.inspect(myObject, {showHidden: false, depth: null})

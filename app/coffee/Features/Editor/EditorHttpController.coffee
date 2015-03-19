@@ -55,7 +55,7 @@ module.exports = EditorHttpController =
 		#TODO: else throw an error
 		EditorController.mergeDoc project_id, user_id, sessionId, doc, (error, clientChange, newVersion) ->
 			return next(error) if error?
-			console.log clientChange
+			#console.log clientChange
 			res.json "ops": clientChange, "newVersion": newVersion
 
 	addFolder: (req, res, next) ->
