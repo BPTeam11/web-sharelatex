@@ -29,42 +29,76 @@ describe "OfflineChangeHandler", ->
     @version = 42
     @callback = sinon.spy()
   
+  describe "patchMake", ->
+    it "should", ->
+      console.log "offline patch"
+      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaa", "es war einmal ein kleiner zaun zzaabbaa")
+      console.log "online patch"
+      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaa", "es einmal ein kleiner zaun zz")
+      
+  
+  
   describe "mergeAndIntegrate", ->
     beforeEach ->
     
     describe "when there is a conflict", ->
       beforeEach ->
-        @oldDocText     = "aaaa"
-        @offlineDocText = "aabbaa"
-        @onlineDocText  = ""
-        @doc = {
-          version: 42
-          doc_id: "doc-id-123"
-          doclines: @offlineDocText
-          }
-        @ofp = [ {
-          diffs: [ [ 1, 'bb' ] ],
-          start1: 2,
-          start2: 2,
-          length1: 0,
-          length2: 2 } ]
-        @onp = [ {
-          diffs: [ [ -1, 'aaaa' ] ],
-          start1: 0,
-          start2: 0,
-          length1: 4,
-          length2: 0 } ]
+        
         @OfflineChangeHandler.getDocumentText =
           sinon.stub().callsArgWith(@oldDocText, @onlineDocText, @version)
         
     
     it "should insert merge braces", ->
-      console.log @oldDocText
-      @OfflineChangeHandler
-        .mergeWhenPossible @project_id, @user_id, @sessionId, @doc,
-          @callback
-      true.should.equal true
-
+      #console.log @oldDocText
+      #@OfflineChangeHandler
+      #  .mergeWhenPossible @project_id, @user_id, @sessionId, @doc,
+      #    @callback
+      #true.should.equal true
+      @oldDocText     = "es war einmal ein kleiner zaun zzaaaa"
+      @offlineDocText = "es war einmal ein kleiner zaun zzaabbaa"
+      @onlineDocText  = "es einmal ein kleiner zaun zz"
+      @doc = {
+        version: 42
+        doc_id: "doc-id-123"
+        doclines: @offlineDocText
+        }
+      @ofp = [ {
+        diffs: [ [ 0, 'aun zzaa' ], [ 1, 'bb' ], [ 0, 'aa' ] ],
+        start1: 27,
+        start2: 27,
+        length1: 10,
+        length2: 12,
+        end1: 36,
+        end2: 38,
+        offset: 2,
+        context1: 8,
+        context2: 2 } ]
+      @onp = [
+        {
+          diffs: [ [ 0, 'es ' ], [ -1, 'war ' ], [ 0, 'einm' ] ],
+          start1: 0,
+          start2: 0,
+          length1: 11,
+          length2: 7,
+          end1: 10,
+          end2: 6,
+          offset: -4,
+          context1: 3,
+          context2: 4 },
+        {
+          diffs: [ [ 0, 'n zz' ], [ -1, 'aaaa' ] ],
+          start1: 29,
+          start2: 25,
+          length1: 8,
+          length2: 4,
+          end1: 36,
+          end2: 28,
+          offset: -4,
+          context1: 4,
+          context2: 0 } ]
+      @OfflineChangeHandler.mergeAndIntegrate @offlineDocText, @onlineDocText, @ofp, @onp,
+        @callback
+  
   ###
   describe "getDocumentText", ->
     beforeEach ->

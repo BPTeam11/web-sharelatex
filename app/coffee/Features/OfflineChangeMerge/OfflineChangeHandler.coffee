@@ -115,29 +115,17 @@ module.exports = OfflineChangeHandler =
       # merged offline patches
       opsForOnline = []
       
-      # current offsets from the original online/offline document, either by
-      # successful merging inserts or by conflict inserts "((..))"
-      # Because start1 always refers to oldDoc, these offsets can only be applied
-      # to start2. Also note that start2 already reflects offsets from oldDoc
-      # to the original online/offline document
-      offlineOffset = 0
-      onlineOffset  = 0
+      # current offsets from the old doc. These will be added to start2 when
+      # finally applying a patch
+      #offlineOffset = 0
+      #onlineOffset  = 0
+      offset = 0
       
       # if both ofp and onp are empty, there are no merges and no conflicts
       if (ofp.length == onp.length == 0)
         console.log "mergeAndIntegrate: Got two empty patches"
-        return callback([], [], [], [])
-      ###
-      # if ofp is empty (but not onp), merges are simply the onp, no conflicts
-      else if (ofp.length == 0)
-        console.log "mergeAndIntegrate: offlinePatches is empty"
-        return callback([], onp, [], [])
-      
-      # if onp is empty (but not ofp), merges are simply the ofp, no conflicts
-      else if (onp.length == 0)
-        console.log "mergeAndIntegrate: onlinePatches is empty"
-        return callback(ofp, [], [], [])
-      ###
+        return callback([], [])
+
       # from now on, ofp and onp are non-empty
       
       # these values say, when true, that:
@@ -162,39 +150,29 @@ module.exports = OfflineChangeHandler =
       # merged.
       while (i < ofp.length || j < onp.length)
         console.log "BEGIN mergeAndIntegrate loop:"
-        console.log "i", i
-        console.log "j", j
+        #console.log "i", i
+        #console.log "j", j
         
         # checking for abbreviation
         
         # add remaining online patches
         if (i == ofp.length)
           for patch, index in onp when index >= j
-            patch.start2 += offlineOffset
+            patch.start2 += offset
+            offset += patch.offset
             opsForOffline.push @patch2ops(patch)...
           break # quit while loop
         
         # add remaining offline patches
         if (j == onp.length)
           for patch, index in ofp when index >= i
-            patch.start2 += onlineOffset
+            patch.start2 += offset
+            offset += patch.offset
             opsForOnline.push @patch2ops(patch)...
           break # quit while loop
           
         # from now on, (i < ofp.length) and (j < onp.length)
         # which means that there can be no invalid array indexing
-        
-        # update offline patch bounds
-        originalOfflinePatchStart = ofp[i].start1
-        originalOfflinePatchEnd   = ofp[i].start1 + ofp[i].length1 - 1
-        currentOfflinePatchStart  = ofp[i].start2
-        currentOfflinePatchEnd    = ofp[i].start2 + ofp[i].length2 - 1
-        
-        # update online patch bounds
-        originalOnlinePatchStart = onp[j].start1
-        originalOnlinePatchEnd   = onp[j].start1 + onp[j].length1 - 1
-        currentOnlinePatchStart  = onp[j].start2
-        currentOnlinePatchEnd    = onp[j].start2 + onp[j].length2 - 1
 
         # --- Checking for conflicts
         ###
@@ -207,20 +185,18 @@ module.exports = OfflineChangeHandler =
         ###
         
         # offlinePatch first, no conflict
-        if (originalOfflinePatchEnd < originalOnlinePatchStart)
+        if (ofp[i].end1 < onp[j].start1)
             # integrate offlinePatch
-            ofp[i].start2 += onlineOffset
-            onlineOffset  += ofp[i].length2 - ofp[i].length1
-            offlineOffset += ofp[i].length2 - ofp[i].length1
+            ofp[i].start2 += offset
+            offset += ofp[i].offset
             opsForOnline.push @patch2ops(ofp[i])...
             i++
         
         # onlinePatch first, no conflict
-        else if (originalOnlinePatchEnd < originalOfflinePatchStart)
+        else if (onp[j].end1 < ofp[i].start1)
             # integrate onlinePatch
-            onp[j].start2 += offlineOffset
-            offlineOffset += onp[j].length2 - onp[j].length1
-            onlineOffset  += onp[j].length2 - onp[j].length1
+            onp[j].start2 += offset
+            offset += onp[j].offset
             opsForOffline.push @patch2ops(onp[j])...
             j++
 
@@ -229,105 +205,69 @@ module.exports = OfflineChangeHandler =
         # There are no overlapping conflicts handled here. Go look somewhere else.
         
         else
-          ###
-          # when the conflicting patch starts lower, include that context
-          onlineMin = @min(currentOnlinePatchStart,  currentOnlinePatchStart -
-            (originalOnlinePatchStart - originalOfflinePatchStart))
-          
-          # when the conflicting patch ends higher, include that context
-          onlineMax = @max(currentOnlinePatchEnd, currentOnlinePatchEnd +
-            (originalOfflinePatchEnd - originalOnlinePatchEnd))
-          
-          offlineMin = @min(currentOfflinePatchStart, currentOfflinePatchStart -
-            (originalOfflinePatchStart - originalOnlinePatchStart))
-          
-          offlineMax = @max(currentOfflinePatchEnd, currentOfflinePatchEnd +
-            (originalOnlinePatchEnd - originalOfflinePatchEnd))
-          
-          console.log onlineMin, onlineMax, offlineMin, offlineMax
-          console.log currentOfflinePatchStart, offlineOffset
-          ###
           
           ###
-            Client side handling
+            To resolve a conflict, we'll do the following:
+            1. fetch the conflicting text area from both sides
+            2. delete the conflicting text area on both sides
+            3. generate a merge form consisting of both versions
+            4. insert the merge form in place of the previous conflict
           ###
           
-          # insert begin tag
+          # calculate conflict area
+
+          offlineAreaStart = @min(ofp[i].start2,
+            ofp[i].start2 - (ofp[i].start1 - onp[j].start1))
+          offlineAreaEnd = @max(ofp[i].end2,
+            ofp[i].end2 + (onp[j].end1 - ofp[i].end1))
+          onlineAreaStart = @min(onp[j].start2,
+            onp[j].start2 - (onp[j].start1 - ofp[i].start1))
+          onlineAreaEnd = @max(onp[j].end2,
+            onp[j].end2 + (ofp[i].end1 - onp[j].end1))
+          
+          console.log "offlineAreaStart", offlineAreaStart
+          console.log "offlineAreaEnd", offlineAreaEnd
+          console.log "onlineAreaStart", onlineAreaStart
+          console.log "onlineAreaEnd", onlineAreaEnd
+          
+          # fetch the conflicting text area from both sides
+          offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
+          onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
+          console.log "offlineText", offlineText
+          console.log "onlineText", onlineText
+          
+          
+          conflictPos = @min(ofp[i].start1, onp[j].start1) + offset
+          
+          # delete the conflicting text area on both sides
           opsForOffline.push {
-            p: currentOfflinePatchStart + offlineOffset,
-            i: conflictBegin }
-          offlineOffset += conflictBegin.length
-          
-          # insert online alternative
-          onlineAlternative = 
-            onlineDocText[currentOnlinePatchStart .. currentOnlinePatchEnd]
-          opsForOffline.push {
-            p: currentOfflinePatchStart + offlineOffset,
-            i: onlineAlternative }
-          offlineOffset += onlineAlternative.length
-          
-          # insert end tag
-          opsForOffline.push {
-            p: currentOfflinePatchStart + offlineOffset,
-            i: conflictEnd }
-          offlineOffset += conflictEnd.length
-          
-          # insert braces around offline conflict
-          # insert begin tag
-          opsForOffline.push {
-            p: currentOfflinePatchStart + offlineOffset,
-            i: conflictBegin }
-          offlineOffset += conflictBegin.length
-          
-          # insert end tag
-          opsForOffline.push {
-            p: currentOfflinePatchEnd + offlineOffset + 1,
-            i: conflictEnd }
-          offlineOffset += conflictEnd.length
-          
-          ###
-            Server side handling
-          ###
-          
-          # insert begin tag
+            p: conflictPos
+            d: offlineText
+            }
           opsForOnline.push {
-            p: currentOnlinePatchStart + onlineOffset,
-            i: conflictBegin }
-          onlineOffset += conflictBegin.length
+            p: conflictPos
+            d: onlineText
+            }
           
-          # insert end tag
-          opsForOnline.push {
-            p: currentOnlinePatchEnd + onlineOffset + 1,
-            i: conflictEnd }
-          onlineOffset += conflictEnd.length
+          # generate a merge form consisting of both versions
+          mergeText = conflictBegin + onlineText + conflictEnd +
+            conflictBegin + offlineText + conflictEnd
           
-          # insert begin tag
-          opsForOnline.push {
-            p: currentOnlinePatchEnd + onlineOffset + 1,
-            i: conflictBegin }
-          onlineOffset += conflictBegin.length
           
-          # insert offline alternative
-          offlineAlternative = 
-            offlineDocText[currentOfflinePatchStart .. currentOfflinePatchEnd]
-          opsForOnline.push {
-            p: currentOnlinePatchEnd + onlineOffset + 1,
-            i: offlineAlternative }
-          onlineOffset += offlineAlternative.length
+          mergeInsert = { p: conflictPos, i: mergeText }
           
-          # insert end tag
-          opsForOnline.push {
-            p: currentOnlinePatchEnd + onlineOffset + 1,
-            i: conflictEnd }
-          onlineOffset += conflictEnd.length
+          opsForOffline.push mergeInsert
+          opsForOnline.push mergeInsert
+          
+          offset += mergeText.length
           
           i++
           j++
-      
-    
+          
+
       console.log "OUTPUT DUMP: mergeAndIntegrate"
-      @logFull "opsForOnline", opsForOnline
       @logFull "opsForOffline", opsForOffline
+      @logFull "opsForOnline", opsForOnline
       callback(opsForOnline, opsForOffline)
 
   patch2ops: (patch) ->
@@ -357,20 +297,46 @@ module.exports = OfflineChangeHandler =
     onp = @patchMake(oldDocText, onlineDocText)
     callback(ofp, onp)
 
-  # this is a wrapper for dmp.patch_make that will set correct start2 values
+  # this is a wrapper for dmp.patch_make that will set correct start1 values
+  # as well as context markers that specify the length of the context around
+  # a patch, as well as end tags
   patchMake: (oldText, newText) ->
     # If this is smaller then the algorithm is more careful.
     # For high Threshold it will override even if there's a confilct.
     dmp.Match_Threshold = 0.1
     patches = dmp.patch_make(oldText, newText)
+    # extended patches
+    extPatches = []
     @logFull "DMP patches", patches
     offset = 0
     for patch in patches
-      # make start2 respect previous patches
-      patch.start2 += offset
-      offset += patch.length2 - patch.length1
     
-    @logFull "calculated patches", patches
+      if (patch.diffs[0][0] == 0)
+        context1 = patch.diffs[0][1].length
+      else
+        context1 = patch.context1 = 0
+      if (patch.diffs[patch.diffs.length - 1][0] == 0)
+        context2 = patch.diffs[patch.diffs.length - 1][1].length
+      else
+        context2 = 0
+      
+      extPatch = {
+        diffs:  patch.diffs
+        start1: patch.start1 - offset
+        start2: patch.start2
+        length1: patch.length1
+        length2: patch.length2
+        end1: patch.start1 - offset + patch.length1 - 1
+        end2: patch.start2 + patch.length2 - 1
+        offset: patch.length2 - patch.length1
+        context1: context1
+        context2: context2
+        }
+      #extPatch.end2 -= 1 unless (extPatch.length2 == 0)
+      offset += extPatch.offset
+      extPatches.push extPatch
+    
+    @logFull "calculated patches", extPatches
     return patches
 
   # getDocumentText generates a given document at a previous version
