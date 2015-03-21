@@ -85,10 +85,12 @@ module.exports = OfflineChangeHandler =
                       user_id: user_id
                     }
                   }
+                  console.log "onlineVersion", onlineVersion
+                  console.log "opsForOnline.length", opsForOnline.length
                   
                   @logFull "mergedChange", mergedChange
                   callback mergedChange, opsForOffline,
-                    onlineVersion + opsForOnline.length
+                    onlineVersion + 1
     
   ###
     offline- and online-Patch need to be sorted

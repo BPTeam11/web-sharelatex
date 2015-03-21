@@ -209,7 +209,11 @@ define [
       (error, docLines, version, updates) =>
         return callback(error) if error?
         @joined = true
-        @doc.catchUp( updates )
+        if @paused
+          console.log "received updatedDoc while paused:"
+          console.log updates
+        else
+          @doc.catchUp( updates )
         callback()
 
     _joinNewDocCallback: (callback = (error) ->) ->
