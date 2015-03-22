@@ -50,6 +50,20 @@ define [
 		submitOp: (args...) -> @_doc.submitOp(args...)
 
 		processUpdateFromServer: (message) ->
+			console.log "processing update:"
+			console.log message
+
+			if message.v < @_doc.version
+				if message.op?
+					console.log "updated ignored because old"
+				else
+					# This should only happen while testing when the server is temporarily suspended and then continued.
+					console.log "WARNING: old acknowledge, dropped update"
+					return
+
+			if message.v > @_doc.version
+				console.log "WARNING: Version doesn't match. Local: #{@_doc.version}, update: #{message.v}"
+
 			try
 				@_doc._onMessage message
 			catch error
@@ -94,6 +108,12 @@ define [
 		deletePendingOps: () -> 
 			@_doc.pendingOp = null 
 
+		deleteInflightOp: () =>
+			@_doc.inflightOp = null
+			@_doc.inflightSubmittedIds.length = 0
+
+			for callback in @_doc.inflightCallbacks
+				callback("Connection lost")
 
 		attachToAce: (ace) -> @_doc.attach_ace(ace)
 		detachFromAce: () -> @_doc.detach_ace?()

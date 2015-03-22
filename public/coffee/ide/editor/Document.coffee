@@ -19,10 +19,12 @@ define [
       @connected = @ide.socket.socket.connected
       @joined = false
       @wantToBeJoined = false
+      @paused = !@connected
       @_checkConsistency = _.bind(@_checkConsistency, @)
       @inconsistentCount = 0
       @_bindToEditorEvents()
       @_bindToSocketEvents()
+      window.doc = this
 
     attachToAce: (@ace) ->
       @doc?.attachToAce(@ace)
@@ -65,8 +67,17 @@ define [
     deletePendingOps: () ->
       @doc?.deletePendingOps()
 
+    deleteInflightOp: () =>
+      @doc?.deleteInflightOp()
+
     hasBufferedOps: () ->
       @doc?.hasBufferedOps()
+
+    pause: () =>
+      @paused = true
+
+    unpause: () =>
+      @paused = false
 
     _bindToSocketEvents: () ->
       @_onUpdateAppliedHandler = (update) => @_onUpdateApplied(update)
@@ -107,7 +118,7 @@ define [
 
       if @doc?
         @ide.offlineStoreManager.cacheProject this
-        @ide.offlineStoreManager.cacheDocument this
+        @ide.offlineStoreManager.cacheDocument this, false
         if @doc.hasBufferedOps()
           if @connected
             @_leaveCallbacks ||= []
@@ -143,6 +154,14 @@ define [
         delete @_joinCallbacks
 
     _onUpdateApplied: (update) ->
+      if @paused
+        console.log "received update while paused:"
+        console.log update
+        return
+
+      console.log "received update:"
+      console.log update
+
       @ide.pushEvent "received-update",
         doc_id: @doc_id
         remote_doc_id: update?.doc
@@ -167,6 +186,7 @@ define [
     _onDisconnect: () ->
       @connected = false
       @joined = false
+      @pause()
       @doc?.updateConnectionState "disconnected"
 
     _onReconnect: () ->
@@ -189,7 +209,11 @@ define [
       (error, docLines, version, updates) =>
         return callback(error) if error?
         @joined = true
-        @doc.catchUp( updates )
+        if @paused
+          console.log "received updatedDoc while paused:"
+          console.log updates
+        else
+          @doc.catchUp( updates )
         callback()
 
     _joinNewDocCallback: (callback = (error) ->) ->
