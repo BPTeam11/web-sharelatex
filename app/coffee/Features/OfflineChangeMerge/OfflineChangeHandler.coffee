@@ -102,9 +102,11 @@ module.exports = OfflineChangeHandler =
   mergeAndIntegrate: (offlineDocText, onlineDocText, ofp, onp,
     callback = (opsForOnline, opsForOffline) -> ) ->
 
-      #console.log "PARAMETER DUMP: mergeAndIntegrate"
-      #@logFull "ofp", ofp
-      #@logFull "onp", onp
+      console.log "PARAMETER DUMP: mergeAndIntegrate"
+      console.log "offlineDocText", offlineDocText
+      console.log "onlineDocText", onlineDocText
+      @logFull "ofp", ofp
+      @logFull "onp", onp
       
       # utilizing heavy iterative style here for efficiency
 
@@ -119,8 +121,6 @@ module.exports = OfflineChangeHandler =
       
       # current offsets from the old doc. These will be added to start2 when
       # finally applying a patch
-      #offlineOffset = 0
-      #onlineOffset  = 0
       offset = 0
       
       # if both ofp and onp are empty, there are no merges and no conflicts
@@ -129,23 +129,7 @@ module.exports = OfflineChangeHandler =
         return callback([], [])
 
       # from now on, ofp and onp are non-empty
-      
-      # these values say, when true, that:
-      # 1.) the current off/online index did not change since last iteration
-      # 2.) the according patch conflicted with a previous patch, which means
-      #     that we want to add it to the ofc/onc array at a later point.
-      # The scenario these are for could be called "multi-conflict", like
-      ###
-        offline: --- ---
-        online:    --- ---
-        conflict:  ^ ^ ^
-      ###
-      # In this case, both sides will be interpreted as one long conflict.
-      currentOfflineConflict = false
-      currentOnlineConflict  = false
-      # these positions point to the start of the current multi-conflict
-      currentOfflineConflictStart = 0
-      currentOnlineConflictStart  = 0
+
       # the 'end' is always the end of the current patch
       
       # the invariant here is that all patches <i and <j have been successfully
@@ -226,18 +210,17 @@ module.exports = OfflineChangeHandler =
             onp[j].start2 - (onp[j].start1 - ofp[i].start1))
           onlineAreaEnd = @max(onp[j].end2,
             onp[j].end2 + (ofp[i].end1 - onp[j].end1))
-          ###
+          
           console.log "offlineAreaStart", offlineAreaStart
           console.log "offlineAreaEnd", offlineAreaEnd
           console.log "onlineAreaStart", onlineAreaStart
           console.log "onlineAreaEnd", onlineAreaEnd
-          ###
+          
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
           console.log "offlineText", offlineText
           console.log "onlineText", onlineText
-          
           
           conflictPos = @min(ofp[i].start1, onp[j].start1) + offset
           
@@ -339,7 +322,7 @@ module.exports = OfflineChangeHandler =
       extPatches.push extPatch
     
     @logFull "calculated patches", extPatches
-    return patches
+    return extPatches
 
   # getDocumentText generates a given document at a previous version
   # this version of the document should be common to all participating clients,
