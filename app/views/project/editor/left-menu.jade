@@ -7,6 +7,7 @@ aside#left-menu.full-size(
 	ul.list-unstyled.nav.nav-downloads.text-center
 		li
 			a(
+				a-disable="!connection.connected"
 				ng-href="/project/{{project_id}}/download/zip"
 				target="_blank"
 			)
@@ -15,6 +16,7 @@ aside#left-menu.full-size(
 				| #{translate("source")}
 		li
 			a(
+				a-disable="!connection.connected"
 				ng-href="{{pdf.url}}"
 				target="_blank"
 				ng-if="pdf.url"
@@ -36,13 +38,17 @@ aside#left-menu.full-size(
 		ul.list-unstyled.nav
 			li(ng-controller="CloneProjectController")
 				a(
+					a-disable="!connection.connected"
 					href,
 					ng-click="openCloneProjectModal()"
 				)
 					i.fa.fa-fw.fa-copy
 					| &nbsp;&nbsp; #{translate("copy_project")}
 			li(ng-controller="TemplatesController", ng-show="permissions.admin")
-				a(ng-click="openPublishTemplateModal()")
+				a(
+					a-disable="!connection.connected"
+					ng-click="openPublishTemplateModal()"
+				)
 					i.fa.fa-external-link.fa-fw 
 					| &nbsp;&nbsp; #{translate("publish_as_template")}
 
@@ -51,7 +57,10 @@ aside#left-menu.full-size(
 		span(ng-controller="DropboxController")
 			ul.list-unstyled.nav()
 				li
-					a(ng-click="openDropboxModal()")
+					a(
+						a-disable="!connection.connected"
+						ng-click="openDropboxModal()"
+					)
 						i.fa.fa-dropbox.fa-fw
 						| &nbsp;&nbsp; Dropbox
 					

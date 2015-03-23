@@ -2,7 +2,7 @@ div.full-size.pdf(ng-controller="PdfController")
 	.toolbar.toolbar-tall
 		a.btn.btn-info(
 			href,
-			ng-disabled="pdf.compiling",
+			ng-disabled="!connection.connected || pdf.compiling",
 			ng-click="recompile()"
 		)
 			i.fa.fa-refresh(
@@ -30,7 +30,7 @@ div.full-size.pdf(ng-controller="PdfController")
 		a(
 			ng-href="{{pdf.url}}"
 			target="_blank"
-			ng-if="pdf.url"
+			a-disabled="!connection.connected && pdf.url"
 			tooltip="#{translate('download_pdf')}"
 			tooltip-placement="bottom"
 		)

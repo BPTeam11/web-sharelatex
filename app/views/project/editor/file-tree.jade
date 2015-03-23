@@ -2,6 +2,7 @@ aside#file-tree(ng-controller="FileTreeController").full-size
 	.toolbar.toolbar-small.toolbar-alt(ng-if="permissions.write")
 		a(
 			href,
+			a-disabled="!connection.connected"
 			ng-click="openNewDocModal()",
 			tooltip-html-unsafe="#{translate('new_file').replace(' ', '<br>')}",
 			tooltip-placement="bottom"
@@ -9,6 +10,7 @@ aside#file-tree(ng-controller="FileTreeController").full-size
 			i.fa.fa-file
 		a(
 			href,
+			a-disabled="!connection.connected"
 			ng-click="openNewFolderModal()",
 			tooltip-html-unsafe="#{translate('new_folder').replace(' ', '<br>')}",
 			tooltip-placement="bottom"
@@ -16,6 +18,7 @@ aside#file-tree(ng-controller="FileTreeController").full-size
 			i.fa.fa-folder
 		a(
 			href,
+			a-disabled="!connection.connected"
 			ng-click="openUploadFileModal()",
 			tooltip="#{translate('upload')}",
 			tooltip-placement="bottom"
@@ -25,6 +28,7 @@ aside#file-tree(ng-controller="FileTreeController").full-size
 		.toolbar-right
 			a(
 				href,
+				a-disabled="!connection.connected"
 				ng-click="startRenamingSelected()",
 				tooltip="#{translate('rename')}",
 				tooltip-placement="bottom"
@@ -32,6 +36,7 @@ aside#file-tree(ng-controller="FileTreeController").full-size
 				i.fa.fa-pencil
 			a(
 				href,
+				a-disabled="!connection.connected"
 				ng-click="openDeleteModalForSelected()",
 				tooltip="#{translate('delete')}",
 				tooltip-placement="bottom",

@@ -19,21 +19,27 @@
 		padding: 4px 10px 5px;
 		margin: 1px 2px;
 		border-radius: @border-radius-small;
-		&:hover {
-			text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-			color: @gray-dark;
-			text-decoration: none;
-		}
-		&.active, &:active {
-			.label {
-				display: none;
-			}
-			color: white;
-			background-color: @link-color;
-			.box-shadow(inset 0 3px 5px rgba(0, 0, 0, 0.225));
+		&:not(.disabled) {
 			&:hover {
-				color: white;
+				text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+				color: @gray-dark;
+				text-decoration: none;
 			}
+			&.active, &:active {
+				.label {
+					display: none;
+				}
+				color: white;
+				background-color: @link-color;
+				.box-shadow(inset 0 3px 5px rgba(0, 0, 0, 0.225));
+				&:hover {
+					color: white;
+				}
+			}
+		}
+
+		&.disabled {
+			cursor: default;
 		}
 	}
 
@@ -137,7 +143,7 @@
 		}
 		a:not(.btn) {
 			color: @gray;
-			&:hover {
+			&:hover:not(.disabled) {
 				color: @gray-light;
 			}
 		}

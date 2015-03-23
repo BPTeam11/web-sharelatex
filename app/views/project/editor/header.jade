@@ -29,7 +29,7 @@ header.toolbar.toolbar-header(ng-cloak, ng-hide="state.loading")
 	.toolbar-center.project-name(ng-controller="ProjectNameController")
 		span.name(
 			ng-dblclick="startRenaming()",
-			ng-show="!state.renaming"
+			ng-show="!state.renaming && connection.connected"
 		) {{ project.name }}
 
 		input.form-control(
@@ -43,6 +43,7 @@ header.toolbar.toolbar-header(ng-cloak, ng-hide="state.loading")
 
 		a.rename(
 			href='#',
+			ng-if="connection.connected"
 			tooltip-placement="bottom",
 			tooltip="#{translate('rename')}",
 			tooltip-append-to-body="true",
@@ -68,6 +69,7 @@ header.toolbar.toolbar-header(ng-cloak, ng-hide="state.loading")
 	
 		a.btn.btn-full-height(
 			href,
+			ng-disabled="!connection.connected"
 			ng-if="permissions.admin",
 			tooltip="#{translate('share')}",
 			tooltip-placement="bottom",
@@ -77,6 +79,7 @@ header.toolbar.toolbar-header(ng-cloak, ng-hide="state.loading")
 			i.fa.fa-fw.fa-group
 		a.btn.btn-full-height(
 			href,
+			ng-disabled="!connection.connected"
 			ng-click="toggleTrackChanges()",
 			ng-class="{ active: (ui.view == 'track-changes') }"
 			tooltip="#{translate('recent_changes')}",
@@ -85,6 +88,7 @@ header.toolbar.toolbar-header(ng-cloak, ng-hide="state.loading")
 			i.fa.fa-fw.fa-history
 		a.btn.btn-full-height(
 			href,
+			ng-disabled="!connection.connected"
 			tooltip="#{translate('chat')}",
 			tooltip-placement="bottom",
 			ng-class="{ active: ui.chatOpen }",

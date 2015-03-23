@@ -477,6 +477,7 @@ js/directives/rightClick.js
 js/directives/asyncForm.js
 js/directives/selectAll.js
 js/directives/fineUpload.js
+js/directives/aDisabled.js
 js/base.js
 
 

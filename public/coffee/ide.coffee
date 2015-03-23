@@ -27,6 +27,7 @@ define [
   "directives/onEnter"
   "directives/stopPropagation"
   "directives/rightClick"
+  "directives/aDisabled"
   "filters/formatDate"
   "main/event-tracking"
   "main/account-upgrade"
@@ -45,6 +46,7 @@ define [
 ) ->
 
   App.controller "IdeController", ($scope, $timeout, ide) ->
+    window.scope = $scope
     # Don't freak out if we're already in an apply callback
     $scope.$originalApply = $scope.$apply
     $scope.$apply = (fn = () ->) ->

@@ -24,6 +24,7 @@ define [], () ->
 
 				@$scope.$apply () =>
 					@$scope.connection.reconnecting = false
+					@$scope.connection.connected = true
 					if @$scope.state.loading
 						@$scope.state.load_progress = 70
 
@@ -37,6 +38,7 @@ define [], () ->
 
 				@$scope.$apply () =>
 					@$scope.connection.reconnecting = false
+					@$scope.connection.connected = false
 
 				setTimeout(=>
 					ga('send', 'event', 'editor-interaction', 'disconnect')
