@@ -6,8 +6,10 @@ strDel = (s1, pos, length) -> s1[...pos] + s1[(pos+length)..]
 util = require('util');
 ConflictHandler = require("../OfflineChangeMerge/ConflictHandler")
 
-conflictBegin = "(("
-conflictEnd   = "))"
+onlineConflictBegin  = "\n\n%%%%% BEGIN MERGE\n%%% original:\n"
+onlineConflictEnd    = "\n"
+offlineConflictBegin = "%%% local:\n"
+offlineConflictEnd   = "\n%%%%% END MERGE\n\n"
 
 ###
   For the vocabulary:
@@ -235,8 +237,8 @@ module.exports = OfflineChangeHandler =
             }
           
           # generate a merge form consisting of both versions
-          mergeText = conflictBegin + onlineText + conflictEnd +
-            conflictBegin + offlineText + conflictEnd
+          mergeText = onlineConflictBegin + onlineText + onlineConflictEnd +
+            offlineConflictBegin + offlineText + offlineConflictEnd
           
           
           mergeInsert = { p: conflictPos, i: mergeText }
