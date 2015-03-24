@@ -29,14 +29,14 @@ describe "OfflineChangeHandler", ->
     @version = 42
     @callback = sinon.spy()
   
-  ###
+  
   describe "patchMake", ->
     it "should", ->
       console.log "offline patch:"
       @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaaxx", "es war einmal ein kleiner zaun zzaabbaaxx")
       console.log "online patch:"
       @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaaxx", "es einmal ein kleiner zaun zzxx")
-  ###  
+  
   
   
   describe "mergeAndIntegrate", ->
@@ -94,7 +94,7 @@ describe "OfflineChangeHandler", ->
         console.log "offlineText:", @offlineDocText
         console.log "onlineText:", @onlineDocText
         
-        @ofp = [ {
+        @ofp = [{
           diffs: [ [ 0, 'aun zzaa' ], [ 1, 'bb' ], [ 0, 'aaxx' ] ],
           start1: 27,
           start2: 27,
@@ -104,7 +104,9 @@ describe "OfflineChangeHandler", ->
           end2: 40,
           offset: 2,
           context1: 8,
-          context2: 4 } ]
+          context2: 4,
+          startWordDiff: 4,
+          endWordDiff: 0 } ]
         @onp = [ {
           diffs: [ [ 0, 'es ' ], [ -1, 'war ' ], [ 0, 'einm' ] ],
           start1: 0,
@@ -115,7 +117,9 @@ describe "OfflineChangeHandler", ->
           end2: 6,
           offset: -4,
           context1: 3,
-          context2: 4 },
+          context2: 4,
+          startWordDiff: 3,
+          endWordDiff: 0 },
         {
           diffs: [ [ 0, 'n zz' ], [ -1, 'aaaa' ], [ 0, 'xx' ] ],
           start1: 29,
@@ -126,7 +130,9 @@ describe "OfflineChangeHandler", ->
           end2: 30,
           offset: -4,
           context1: 4,
-          context2: 2 } ]
+          context2: 2,
+          startWordDiff: 2,
+          endWordDiff: 0 } ]
       
       it "should insert merge braces", ->
         @OfflineChangeHandler.mergeAndIntegrate @offlineDocText, @onlineDocText, @ofp, @onp,

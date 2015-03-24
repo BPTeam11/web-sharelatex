@@ -203,15 +203,22 @@ module.exports = OfflineChangeHandler =
           ###
           
           # calculate conflict area
-
-          offlineAreaStart = @min(ofp[i].start2,
-            ofp[i].start2 - (ofp[i].start1 - onp[j].start1))
-          offlineAreaEnd = @max(ofp[i].end2,
-            ofp[i].end2 + (onp[j].end1 - ofp[i].end1))
-          onlineAreaStart = @min(onp[j].start2,
-            onp[j].start2 - (onp[j].start1 - ofp[i].start1))
-          onlineAreaEnd = @max(onp[j].end2,
-            onp[j].end2 + (ofp[i].end1 - onp[j].end1))
+          
+          # patch bounds that respect "words"
+          offlinePatchStart = ofp[i].start1 + ofp[i].startWordDiff
+          offlinePatchEnd   = ofp[i].end1   - ofp[i].endWordDiff
+          onlinePatchStart  = onp[j].start1 + onp[j].startWordDiff
+          onlinePatchEnd    = onp[j].end1   - onp[j].endWordDiff
+          
+          # use the area that includes both patches
+          minPatchStart = @min(offlinePatchStart, onlinePatchStart)
+          maxPatchEnd   = @max(offlinePatchEnd, onlinePatchEnd)
+          
+          # map to current text
+          offlineAreaStart = minPatchStart - ofp[i].start1 + ofp[i].start2
+          offlineAreaEnd   = maxPatchEnd   - ofp[i].end1   + ofp[i].end2
+          onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2
+          onlineAreaEnd    = maxPatchEnd   - onp[j].end1   + onp[j].end2
           
           console.log "offlineAreaStart", offlineAreaStart
           console.log "offlineAreaEnd", offlineAreaEnd
@@ -224,7 +231,7 @@ module.exports = OfflineChangeHandler =
           console.log "offlineText", offlineText
           console.log "onlineText", onlineText
           
-          conflictPos = @min(ofp[i].start1, onp[j].start1) + offset
+          conflictPos = minPatchStart + offset
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
@@ -239,7 +246,6 @@ module.exports = OfflineChangeHandler =
           # generate a merge form consisting of both versions
           mergeText = onlineConflictBegin + onlineText + onlineConflictEnd +
             offlineConflictBegin + offlineText + offlineConflictEnd
-          
           
           mergeInsert = { p: conflictPos, i: mergeText }
           
@@ -297,13 +303,38 @@ module.exports = OfflineChangeHandler =
     @logFull "DMP patches", patches
     offset = 0
     for patch in patches
-    
-      if (patch.diffs[0][0] == 0)
-        context1 = patch.diffs[0][1].length
+
+      # extract context length, AND
+      
+      # extract nearest words offset from context
+      # these are relative to start and end positions, e.g.:
+      # given the context "aa bc" starting at pos 0,
+      # startWordDiff = 3
+      # given the context "ee fg" ending at pos 10,
+      # endWordDiff = 3
+      startWordDiff = 0
+      endWordDiff   = 0
+      
+      # start context
+      firstPatchEntry = patch.diffs[0]
+      if (firstPatchEntry[0] == 0)
+        contextString = firstPatchEntry[1]
+        context1 = contextString.length
+        for char, pos in contextString[0 .. context1 - 1]
+          if char == '\n' or char == ' '
+            startWordDiff = pos + 1
       else
         context1 = patch.context1 = 0
-      if (patch.diffs[patch.diffs.length - 1][0] == 0)
-        context2 = patch.diffs[patch.diffs.length - 1][1].length
+      
+      # end context
+      lastPatchEntry = patch.diffs[patch.diffs.length - 1]
+      if (lastPatchEntry[0] == 0)
+        contextString = lastPatchEntry[1]
+        context2 = contextString.length
+        for char, pos in contextString[0 .. context2 - 1]
+          if char == '\n' or char == ' '
+            endWordDiff = context2 - pos + 1
+            break
       else
         context2 = 0
       
@@ -318,6 +349,8 @@ module.exports = OfflineChangeHandler =
         offset: patch.length2 - patch.length1
         context1: context1
         context2: context2
+        startWordDiff: startWordDiff
+        endWordDiff: endWordDiff
         }
       #extPatch.end2 -= 1 unless (extPatch.length2 == 0)
       offset += extPatch.offset
