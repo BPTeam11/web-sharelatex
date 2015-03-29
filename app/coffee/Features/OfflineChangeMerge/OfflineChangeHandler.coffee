@@ -323,7 +323,7 @@ module.exports = OfflineChangeHandler =
           if char == '\n' or char == ' '
             startWordDiff = pos + 1
       else
-        context1 = patch.context1 = 0
+        context1 = 0
       
       # end context
       lastPatchEntry = patch.diffs[patch.diffs.length - 1]
