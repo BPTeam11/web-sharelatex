@@ -4,7 +4,6 @@ dmp = new diff_match_patch()
 strInject= (s1, pos, s2) -> s1[...pos] + s2 + s1[pos..]
 strDel = (s1, pos, length) -> s1[...pos] + s1[(pos+length)..]
 util = require('util');
-ConflictHandler = require("../OfflineChangeMerge/ConflictHandler")
 
 onlineConflictBegin  = "\n\n%%%%% BEGIN MERGE\n%%% original:\n"
 onlineConflictEnd    = "\n"
