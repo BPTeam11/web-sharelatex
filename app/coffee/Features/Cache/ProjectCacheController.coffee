@@ -12,7 +12,6 @@ module.exports = ProjectCacheController =
         (err, results) ->
           res.type "json"
           res.send JSON.stringify results
-          req.session.destroy()
 
   cacheProject: (req, res, next) ->
     cache = []
@@ -20,4 +19,3 @@ module.exports = ProjectCacheController =
     ProjectCacheManager.createCacheForProject project, (error, cache)->
       res.type "json"
       res.send JSON.stringify cache
-      req.session.destroy()
