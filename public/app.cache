@@ -492,6 +492,7 @@ js/ide/pdfng/directives/pdfSpinner.js
 js/ide/pdfng/directives/pdfPage.js 
 js/ide/offline-store/OfflineStoreManager.js
 js/ide/offline-store/IndexedDbManager.js
+js/ide/CacheUpdater/CacheUpdater.js
 
 http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
 http://cdn.mathjax.org/mathjax/latest/config/TeX-AMS_HTML.js?rev=2.5.1
