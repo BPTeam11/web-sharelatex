@@ -27,6 +27,7 @@ CompileManager = require("./Features/Compile/CompileManager")
 CompileController = require("./Features/Compile/CompileController")
 HealthCheckController = require("./Features/HealthCheck/HealthCheckController")
 ProjectDownloadsController = require "./Features/Downloads/ProjectDownloadsController"
+ProjectCacheController = require "./Features/Cache/ProjectCacheController"
 FileStoreController = require("./Features/FileStore/FileStoreController")
 TrackChangesController = require("./Features/TrackChanges/TrackChangesController")
 PasswordResetRouter = require("./Features/PasswordReset/PasswordResetRouter")
@@ -43,242 +44,245 @@ logger = require("logger-sharelatex")
 _ = require("underscore")
 
 httpAuth = require('express').basicAuth (user, pass)->
-	isValid = Settings.httpAuthUsers[user] == pass
-	if !isValid
-		logger.err user:user, pass:pass, "invalid login details"
-	return isValid
+  isValid = Settings.httpAuthUsers[user] == pass
+  if !isValid
+    logger.err user:user, pass:pass, "invalid login details"
+  return isValid
 
 module.exports = class Router
-	constructor: (app, io, socketSessions)->
-		app.use(app.router)
-		
-		app.get  '/login', UserPagesController.loginPage
-		app.post '/login', AuthenticationController.login
-		app.get  '/logout', UserController.logout
-		app.get  '/restricted', SecurityManager.restricted
+  constructor: (app, io, socketSessions)->
+    app.use(app.router)
 
-		app.get  '/register', UserPagesController.registerPage
-		app.post '/register', UserController.register
+    app.get  '/login', UserPagesController.loginPage
+    app.post '/login', AuthenticationController.login
+    app.get  '/logout', UserController.logout
+    app.get  '/restricted', SecurityManager.restricted
 
-		EditorRouter.apply(app, httpAuth)
-		CollaboratorsRouter.apply(app)
-		SubscriptionRouter.apply(app)
-		UploadsRouter.apply(app)
-		PasswordResetRouter.apply(app)
-		StaticPagesRouter.apply(app)
-		TemplatesRouter.apply(app)
-		DropboxRouter.apply(app)
-		
-		Modules.applyRouter(app)
+    app.get  '/register', UserPagesController.registerPage
+    app.post '/register', UserController.register
 
-		app.get '/blog', BlogController.getIndexPage
-		app.get '/blog/*', BlogController.getPage
+    EditorRouter.apply(app, httpAuth)
+    CollaboratorsRouter.apply(app)
+    SubscriptionRouter.apply(app)
+    UploadsRouter.apply(app)
+    PasswordResetRouter.apply(app)
+    StaticPagesRouter.apply(app)
+    TemplatesRouter.apply(app)
+    DropboxRouter.apply(app)
 
-		if Settings.enableSubscriptions
-			app.get  '/user/bonus', AuthenticationController.requireLogin(), ReferalMiddleware.getUserReferalId, ReferalController.bonus
+    Modules.applyRouter(app)
 
-		app.get  '/user/settings', AuthenticationController.requireLogin(), UserPagesController.settingsPage
-		app.post '/user/settings', AuthenticationController.requireLogin(), UserController.updateUserSettings
-		app.post '/user/password/update', AuthenticationController.requireLogin(), UserController.changePassword
+    app.get '/blog', BlogController.getIndexPage
+    app.get '/blog/*', BlogController.getPage
 
-		app.del  '/user/newsletter/unsubscribe', AuthenticationController.requireLogin(), UserController.unsubscribe
-		app.del  '/user', AuthenticationController.requireLogin(), UserController.deleteUser
+    if Settings.enableSubscriptions
+      app.get  '/user/bonus', AuthenticationController.requireLogin(), ReferalMiddleware.getUserReferalId, ReferalController.bonus
 
-		app.get  '/user/auth_token', AuthenticationController.requireLogin(), AuthenticationController.getAuthToken
-		app.get  '/user/personal_info', AuthenticationController.requireLogin(allow_auth_token: true), UserInfoController.getLoggedInUsersPersonalInfo
-		app.get  '/user/:user_id/personal_info', httpAuth, UserInfoController.getPersonalInfo
+    app.get  '/user/settings', AuthenticationController.requireLogin(), UserPagesController.settingsPage
+    app.post '/user/settings', AuthenticationController.requireLogin(), UserController.updateUserSettings
+    app.post '/user/password/update', AuthenticationController.requireLogin(), UserController.changePassword
 
-		app.get  '/project', AuthenticationController.requireLogin(), ProjectController.projectListPage
-		app.post '/project/new', AuthenticationController.requireLogin(), ProjectController.newProject
+    app.del  '/user/newsletter/unsubscribe', AuthenticationController.requireLogin(), UserController.unsubscribe
+    app.del  '/user', AuthenticationController.requireLogin(), UserController.deleteUser
 
-		app.get  '/Project/:Project_id', SecurityManager.requestCanAccessProject, ProjectController.loadEditor
-		app.get  '/Project/:Project_id/file/:File_id', SecurityManager.requestCanAccessProject, FileStoreController.getFile
+    app.get  '/user/auth_token', AuthenticationController.requireLogin(), AuthenticationController.getAuthToken
+    app.get  '/user/personal_info', AuthenticationController.requireLogin(allow_auth_token: true), UserInfoController.getLoggedInUsersPersonalInfo
+    app.get  '/user/:user_id/personal_info', httpAuth, UserInfoController.getPersonalInfo
 
-		app.post '/project/:Project_id/settings', SecurityManager.requestCanModifyProject, ProjectController.updateProjectSettings
+    app.get  '/project', AuthenticationController.requireLogin(), ProjectController.projectListPage
+    app.post '/project/new', AuthenticationController.requireLogin(), ProjectController.newProject
 
-		app.post '/project/:Project_id/compile', SecurityManager.requestCanAccessProject, CompileController.compile
-		app.get  '/Project/:Project_id/output/output.pdf', SecurityManager.requestCanAccessProject, CompileController.downloadPdf
-		app.get  /^\/project\/([^\/]*)\/output\/(.*)$/,
-			((req, res, next) ->
-				params =
-					"Project_id": req.params[0]
-					"file":       req.params[1]
-				req.params = params
-				next()
-			), SecurityManager.requestCanAccessProject, CompileController.getFileFromClsi
-		app.del "/project/:Project_id/output", SecurityManager.requestCanAccessProject, CompileController.deleteAuxFiles
-		app.get "/project/:Project_id/sync/code", SecurityManager.requestCanAccessProject, CompileController.proxySync
-		app.get "/project/:Project_id/sync/pdf", SecurityManager.requestCanAccessProject, CompileController.proxySync
+    app.get  '/Project/:Project_id', SecurityManager.requestCanAccessProject, ProjectController.loadEditor
+    app.get  '/Project/:Project_id/file/:File_id', SecurityManager.requestCanAccessProject, FileStoreController.getFile
 
-		app.del  '/Project/:Project_id', SecurityManager.requestIsOwner, ProjectController.deleteProject
-		app.post '/Project/:Project_id/restore', SecurityManager.requestIsOwner, ProjectController.restoreProject
-		app.post '/Project/:Project_id/clone', SecurityManager.requestCanAccessProject, ProjectController.cloneProject
+    app.post '/project/:Project_id/settings', SecurityManager.requestCanModifyProject, ProjectController.updateProjectSettings
 
-		app.post '/project/:Project_id/rename', SecurityManager.requestIsOwner, ProjectController.renameProject
+    app.post '/project/:Project_id/compile', SecurityManager.requestCanAccessProject, CompileController.compile
+    app.get  '/Project/:Project_id/output/output.pdf', SecurityManager.requestCanAccessProject, CompileController.downloadPdf
+    app.get  /^\/project\/([^\/]*)\/output\/(.*)$/,
+      ((req, res, next) ->
+        params =
+          "Project_id": req.params[0]
+          "file":       req.params[1]
+        req.params = params
+        next()
+      ), SecurityManager.requestCanAccessProject, CompileController.getFileFromClsi
+    app.del "/project/:Project_id/output", SecurityManager.requestCanAccessProject, CompileController.deleteAuxFiles
+    app.get "/project/:Project_id/sync/code", SecurityManager.requestCanAccessProject, CompileController.proxySync
+    app.get "/project/:Project_id/sync/pdf", SecurityManager.requestCanAccessProject, CompileController.proxySync
 
-		app.get  "/project/:Project_id/updates", SecurityManager.requestCanAccessProject, TrackChangesController.proxyToTrackChangesApi
-		app.get  "/project/:Project_id/doc/:doc_id/diff", SecurityManager.requestCanAccessProject, TrackChangesController.proxyToTrackChangesApi
-		app.post "/project/:Project_id/doc/:doc_id/version/:version_id/restore", SecurityManager.requestCanAccessProject, TrackChangesController.proxyToTrackChangesApi
+    app.del  '/Project/:Project_id', SecurityManager.requestIsOwner, ProjectController.deleteProject
+    app.post '/Project/:Project_id/restore', SecurityManager.requestIsOwner, ProjectController.restoreProject
+    app.post '/Project/:Project_id/clone', SecurityManager.requestCanAccessProject, ProjectController.cloneProject
 
-		app.get  '/project/:Project_id/connected_users', SecurityManager.requestCanAccessProject, ConnectedUsersController.getConnectedUsers
+    app.post '/project/:Project_id/rename', SecurityManager.requestIsOwner, ProjectController.renameProject
 
-		app.get  '/Project/:Project_id/download/zip', SecurityManager.requestCanAccessProject, ProjectDownloadsController.downloadProject
-		app.get  '/project/download/zip', SecurityManager.requestCanAccessMultipleProjects, ProjectDownloadsController.downloadMultipleProjects
+    app.get  "/project/:Project_id/updates", SecurityManager.requestCanAccessProject, TrackChangesController.proxyToTrackChangesApi
+    app.get  "/project/:Project_id/doc/:doc_id/diff", SecurityManager.requestCanAccessProject, TrackChangesController.proxyToTrackChangesApi
+    app.post "/project/:Project_id/doc/:doc_id/version/:version_id/restore", SecurityManager.requestCanAccessProject, TrackChangesController.proxyToTrackChangesApi
 
-		app.get '/tag', AuthenticationController.requireLogin(), TagsController.getAllTags
-		app.post '/project/:project_id/tag', AuthenticationController.requireLogin(), TagsController.processTagsUpdate
+    app.get  '/project/:Project_id/connected_users', SecurityManager.requestCanAccessProject, ConnectedUsersController.getConnectedUsers
 
-		app.get  '/project/:project_id/details', httpAuth, ProjectApiController.getProjectDetails
+    app.get  '/Project/:Project_id/download/zip', SecurityManager.requestCanAccessProject, ProjectDownloadsController.downloadProject
+    app.get  '/project/download/zip', SecurityManager.requestCanAccessMultipleProjects, ProjectDownloadsController.downloadMultipleProjects
 
-		app.get '/internal/project/:Project_id/zip', httpAuth, ProjectDownloadsController.downloadProject
-		app.get '/internal/project/:project_id/compile/pdf', httpAuth, CompileController.compileAndDownloadPdf
+    app.get  '/project/:Project_id/cache', SecurityManager.requestCanModifyProject, ProjectCacheController.cacheProject
+    app.ignoreCsrf('get', '/project/:Project_id/cache')
+
+    app.get '/tag', AuthenticationController.requireLogin(), TagsController.getAllTags
+    app.post '/project/:project_id/tag', AuthenticationController.requireLogin(), TagsController.processTagsUpdate
+
+    app.get  '/project/:project_id/details', httpAuth, ProjectApiController.getProjectDetails
+
+    app.get '/internal/project/:Project_id/zip', httpAuth, ProjectDownloadsController.downloadProject
+    app.get '/internal/project/:project_id/compile/pdf', httpAuth, CompileController.compileAndDownloadPdf
 
 
-		app.get  '/project/:Project_id/doc/:doc_id', httpAuth, DocumentController.getDocument
-		app.post '/project/:Project_id/doc/:doc_id', httpAuth, DocumentController.setDocument
-		app.ignoreCsrf('post', '/project/:Project_id/doc/:doc_id')
+    app.get  '/project/:Project_id/doc/:doc_id', httpAuth, DocumentController.getDocument
+    app.post '/project/:Project_id/doc/:doc_id', httpAuth, DocumentController.setDocument
+    app.ignoreCsrf('post', '/project/:Project_id/doc/:doc_id')
 
-		app.post '/user/:user_id/update/*', httpAuth, TpdsController.mergeUpdate
-		app.del  '/user/:user_id/update/*', httpAuth, TpdsController.deleteUpdate
-		app.ignoreCsrf('post', '/user/:user_id/update/*')
-		app.ignoreCsrf('delete', '/user/:user_id/update/*')
-		
-		app.post '/project/:project_id/contents/*', httpAuth, TpdsController.updateProjectContents
-		app.del  '/project/:project_id/contents/*', httpAuth, TpdsController.deleteProjectContents
-		app.ignoreCsrf('post', '/project/:project_id/contents/*')
-		app.ignoreCsrf('delete', '/project/:project_id/contents/*')
+    app.post '/user/:user_id/update/*', httpAuth, TpdsController.mergeUpdate
+    app.del  '/user/:user_id/update/*', httpAuth, TpdsController.deleteUpdate
+    app.ignoreCsrf('post', '/user/:user_id/update/*')
+    app.ignoreCsrf('delete', '/user/:user_id/update/*')
 
-		app.post "/spelling/check", AuthenticationController.requireLogin(), SpellingController.proxyRequestToSpellingApi
-		app.post "/spelling/learn", AuthenticationController.requireLogin(), SpellingController.proxyRequestToSpellingApi
+    app.post '/project/:project_id/contents/*', httpAuth, TpdsController.updateProjectContents
+    app.del  '/project/:project_id/contents/*', httpAuth, TpdsController.deleteProjectContents
+    app.ignoreCsrf('post', '/project/:project_id/contents/*')
+    app.ignoreCsrf('delete', '/project/:project_id/contents/*')
 
-		app.get  "/project/:Project_id/messages", SecurityManager.requestCanAccessProject, ChatController.getMessages
-		app.post "/project/:Project_id/messages", SecurityManager.requestCanAccessProject, ChatController.sendMessage
-		
-		app.get  /learn(\/.*)?/, WikiController.getPage
+    app.post "/spelling/check", AuthenticationController.requireLogin(), SpellingController.proxyRequestToSpellingApi
+    app.post "/spelling/learn", AuthenticationController.requireLogin(), SpellingController.proxyRequestToSpellingApi
 
-		#Admin Stuff
-		app.get  '/admin', SecurityManager.requestIsAdmin, AdminController.index
-		app.post '/admin/closeEditor', SecurityManager.requestIsAdmin, AdminController.closeEditor
-		app.post '/admin/dissconectAllUsers', SecurityManager.requestIsAdmin, AdminController.dissconectAllUsers
-		app.post '/admin/syncUserToSubscription', SecurityManager.requestIsAdmin, AdminController.syncUserToSubscription
-		app.post '/admin/flushProjectToTpds', SecurityManager.requestIsAdmin, AdminController.flushProjectToTpds
-		app.post '/admin/pollDropboxForUser', SecurityManager.requestIsAdmin, AdminController.pollDropboxForUser
-		app.post '/admin/messages', SecurityManager.requestIsAdmin, AdminController.createMessage
-		app.post '/admin/messages/clear', SecurityManager.requestIsAdmin, AdminController.clearMessages
+    app.get  "/project/:Project_id/messages", SecurityManager.requestCanAccessProject, ChatController.getMessages
+    app.post "/project/:Project_id/messages", SecurityManager.requestCanAccessProject, ChatController.sendMessage
 
-		app.get '/perfTest', (req,res)->
-			res.send("hello")
-			req.session.destroy()
+    app.get  /learn(\/.*)?/, WikiController.getPage
 
-		app.get '/status', (req,res)->
-			res.send("websharelatex is up")
-			req.session.destroy()
+    #Admin Stuff
+    app.get  '/admin', SecurityManager.requestIsAdmin, AdminController.index
+    app.post '/admin/closeEditor', SecurityManager.requestIsAdmin, AdminController.closeEditor
+    app.post '/admin/dissconectAllUsers', SecurityManager.requestIsAdmin, AdminController.dissconectAllUsers
+    app.post '/admin/syncUserToSubscription', SecurityManager.requestIsAdmin, AdminController.syncUserToSubscription
+    app.post '/admin/flushProjectToTpds', SecurityManager.requestIsAdmin, AdminController.flushProjectToTpds
+    app.post '/admin/pollDropboxForUser', SecurityManager.requestIsAdmin, AdminController.pollDropboxForUser
+    app.post '/admin/messages', SecurityManager.requestIsAdmin, AdminController.createMessage
+    app.post '/admin/messages/clear', SecurityManager.requestIsAdmin, AdminController.clearMessages
 
-		app.get '/health_check', HealthCheckController.check
-		app.get '/health_check/redis', HealthCheckController.checkRedis
+    app.get '/perfTest', (req,res)->
+      res.send("hello")
+      req.session.destroy()
 
-		app.get "/status/compiler/:Project_id", SecurityManager.requestCanAccessProject, (req, res) ->
-			sendRes = _.once (statusCode, message)->
-				res.writeHead statusCode
-				res.end message
-			CompileManager.compile req.params.Project_id, "test-compile", {}, () ->
-				sendRes 200, "Compiler returned in less than 10 seconds"
-			setTimeout (() ->
-				sendRes 500, "Compiler timed out"
-			), 10000
-			req.session.destroy()
+    app.get '/status', (req,res)->
+      res.send("websharelatex is up")
+      req.session.destroy()
 
-		app.get '/test', (req, res) ->
-			res.render "tests",
-				privilegeLevel: "owner"
-				project:
-					name: "test"
-				date: Date.now()
-				layout: false
-				userCanSeeDropbox: true
-				languages: []
+    app.get '/health_check', HealthCheckController.check
+    app.get '/health_check/redis', HealthCheckController.checkRedis
 
-		app.get "/ip", (req, res, next) ->
-			res.send({
-				ip: req.ip
-				ips: req.ips
-				headers: req.headers
-			})
+    app.get "/status/compiler/:Project_id", SecurityManager.requestCanAccessProject, (req, res) ->
+      sendRes = _.once (statusCode, message)->
+        res.writeHead statusCode
+        res.end message
+      CompileManager.compile req.params.Project_id, "test-compile", {}, () ->
+        sendRes 200, "Compiler returned in less than 10 seconds"
+      setTimeout (() ->
+        sendRes 500, "Compiler timed out"
+      ), 10000
+      req.session.destroy()
 
-		app.get '/oops-express', (req, res, next) -> next(new Error("Test error"))
-		app.get '/oops-internal', (req, res, next) -> throw new Error("Test error")
-		app.get '/oops-mongo', (req, res, next) ->
-			require("./models/Project").Project.findOne {}, () ->
-				throw new Error("Test error")
+    app.get '/test', (req, res) ->
+      res.render "tests",
+        privilegeLevel: "owner"
+        project:
+          name: "test"
+        date: Date.now()
+        layout: false
+        userCanSeeDropbox: true
+        languages: []
 
-		app.get '/opps-small', (req, res, next)->
-			logger.err "test error occured"
-			res.send()
+    app.get "/ip", (req, res, next) ->
+      res.send({
+        ip: req.ip
+        ips: req.ips
+        headers: req.headers
+      })
 
-		app.post '/error/client', (req, res, next) ->
-			logger.error err: req.body.error, meta: req.body.meta, "client side error"
-			res.send(204)
+    app.get '/oops-express', (req, res, next) -> next(new Error("Test error"))
+    app.get '/oops-internal', (req, res, next) -> throw new Error("Test error")
+    app.get '/oops-mongo', (req, res, next) ->
+      require("./models/Project").Project.findOne {}, () ->
+        throw new Error("Test error")
 
-		app.get '*', ErrorController.notFound
+    app.get '/opps-small', (req, res, next)->
+      logger.err "test error occured"
+      res.send()
 
-		socketSessions.on 'connection', (err, client, session)->
-			metrics.inc('socket-io.connection')
-			# This is not ideal - we should come up with a better way of handling
-			# anonymous users, but various logging lines rely on user._id
-			if !session or !session.user?
-				user = {_id: "anonymous-user"}
-			else
-				user = session.user
+    app.post '/error/client', (req, res, next) ->
+      logger.error err: req.body.error, meta: req.body.meta, "client side error"
+      res.send(204)
 
-			client.on 'joinProject', (data, callback) ->
-				EditorController.joinProject(client, user, data.project_id, callback)
+    app.get '*', ErrorController.notFound
 
-			client.on 'disconnect', () ->
-				metrics.inc ('socket-io.disconnect')
-				EditorController.leaveProject client, user
+    socketSessions.on 'connection', (err, client, session)->
+      metrics.inc('socket-io.connection')
+      # This is not ideal - we should come up with a better way of handling
+      # anonymous users, but various logging lines rely on user._id
+      if !session or !session.user?
+        user = {_id: "anonymous-user"}
+      else
+        user = session.user
 
-			client.on 'applyOtUpdate', (doc_id, update) ->
-				AuthorizationManager.ensureClientCanEditProject client, (error, project_id) =>
-					EditorUpdatesController.applyOtUpdate(client, project_id, doc_id, update)
+      client.on 'joinProject', (data, callback) ->
+        EditorController.joinProject(client, user, data.project_id, callback)
 
-			client.on 'clientTracking.updatePosition', (cursorData) ->
-				AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
-					EditorController.updateClientPosition(client, cursorData)
+      client.on 'disconnect', () ->
+        metrics.inc ('socket-io.disconnect')
+        EditorController.leaveProject client, user
 
-			client.on 'leaveDoc', (doc_id, callback)->
-				AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
-					EditorController.leaveDoc(client, project_id, doc_id, callback)
+      client.on 'applyOtUpdate', (doc_id, update) ->
+        AuthorizationManager.ensureClientCanEditProject client, (error, project_id) =>
+          EditorUpdatesController.applyOtUpdate(client, project_id, doc_id, update)
 
-			client.on 'joinDoc', (args...)->
-				AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
-					EditorController.joinDoc(client, project_id, args...)
+      client.on 'clientTracking.updatePosition', (cursorData) ->
+        AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
+          EditorController.updateClientPosition(client, cursorData)
 
-			# The remaining can be done via HTTP
-			client.on 'addUserToProject', (email, newPrivalageLevel, callback)->
-				AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
-					EditorController.addUserToProject project_id, email, newPrivalageLevel, callback
+      client.on 'leaveDoc', (doc_id, callback)->
+        AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
+          EditorController.leaveDoc(client, project_id, doc_id, callback)
 
-			client.on 'removeUserFromProject', (user_id, callback)->
-				AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
-					EditorController.removeUserFromProject(project_id, user_id, callback)
+      client.on 'joinDoc', (args...)->
+        AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
+          EditorController.joinDoc(client, project_id, args...)
 
-			client.on 'getUserDropboxLinkStatus', (owner_id, callback)->
-				AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
-					dropboxHandler.getUserRegistrationStatus owner_id, callback
+      # The remaining can be done via HTTP
+      client.on 'addUserToProject', (email, newPrivalageLevel, callback)->
+        AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
+          EditorController.addUserToProject project_id, email, newPrivalageLevel, callback
 
-			# client.on 'publishProjectAsTemplate', (user_id, callback)->
-			# 	AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
-			# 		TemplatesController.publishProject user_id, project_id, callback
-			# 
-			# client.on 'unPublishProjectAsTemplate', (user_id, callback)->
-			# 	AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
-			# 		TemplatesController.unPublishProject user_id, project_id, callback
-			# 
-			# client.on 'updateProjectDescription', (description, callback)->
-			# 	AuthorizationManager.ensureClientCanEditProject client, (error, project_id) =>
-			# 		EditorController.updateProjectDescription project_id, description, callback
-			# 
-			# client.on "getPublishedDetails", (user_id, callback)->
-			# 	AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
-			# 		TemplatesController.getTemplateDetails user_id, project_id, callback
+      client.on 'removeUserFromProject', (user_id, callback)->
+        AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
+          EditorController.removeUserFromProject(project_id, user_id, callback)
+
+      client.on 'getUserDropboxLinkStatus', (owner_id, callback)->
+        AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
+          dropboxHandler.getUserRegistrationStatus owner_id, callback
+
+      # client.on 'publishProjectAsTemplate', (user_id, callback)->
+      #   AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
+      #     TemplatesController.publishProject user_id, project_id, callback
+      #
+      # client.on 'unPublishProjectAsTemplate', (user_id, callback)->
+      #   AuthorizationManager.ensureClientCanAdminProject client, (error, project_id) =>
+      #     TemplatesController.unPublishProject user_id, project_id, callback
+      #
+      # client.on 'updateProjectDescription', (description, callback)->
+      #   AuthorizationManager.ensureClientCanEditProject client, (error, project_id) =>
+      #     EditorController.updateProjectDescription project_id, description, callback
+      #
+      # client.on "getPublishedDetails", (user_id, callback)->
+      #   AuthorizationManager.ensureClientCanViewProject client, (error, project_id) =>
+      #     TemplatesController.getTemplateDetails user_id, project_id, callback
 
