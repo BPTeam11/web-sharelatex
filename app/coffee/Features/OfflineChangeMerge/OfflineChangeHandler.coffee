@@ -64,8 +64,8 @@ module.exports = OfflineChangeHandler =
   mergeWhenPossible: (project_id, user_id, sessionId, doc,
     callback = (mergedChange, clientMergeOps, newVersion) ->)->
 
-      console.log "MergeHandler here :)  Old version:"
-      console.log doc.version
+      #console.log "MergeHandler here :)  Old version:"
+      #console.log doc.version
       
       offlineDocText = doc.doclines.join('\n')
       @getDocumentText project_id, doc.doc_id, doc.version,
@@ -86,10 +86,10 @@ module.exports = OfflineChangeHandler =
                       user_id: user_id
                     }
                   }
-                  console.log "onlineVersion", onlineVersion
-                  console.log "opsForOnline.length", opsForOnline.length
+                  #console.log "onlineVersion", onlineVersion
+                  #console.log "opsForOnline.length", opsForOnline.length
                   
-                  @logFull "mergedChange", mergedChange
+                  #@logFull "mergedChange", mergedChange
                   callback mergedChange, opsForOffline,
                     onlineVersion + 1
     
@@ -103,11 +103,11 @@ module.exports = OfflineChangeHandler =
   mergeAndIntegrate: (offlineDocText, onlineDocText, ofp, onp,
     callback = (opsForOnline, opsForOffline) -> ) ->
 
-      console.log "PARAMETER DUMP: mergeAndIntegrate"
-      console.log "offlineDocText", offlineDocText
-      console.log "onlineDocText", onlineDocText
-      @logFull "ofp", ofp
-      @logFull "onp", onp
+      #console.log "PARAMETER DUMP: mergeAndIntegrate"
+      #console.log "offlineDocText", offlineDocText
+      #console.log "onlineDocText", onlineDocText
+      #@logFull "ofp", ofp
+      #@logFull "onp", onp
       
       # utilizing heavy iterative style here for efficiency
 
@@ -219,16 +219,16 @@ module.exports = OfflineChangeHandler =
           onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2
           onlineAreaEnd    = maxPatchEnd   - onp[j].end1   + onp[j].end2
           
-          console.log "offlineAreaStart", offlineAreaStart
-          console.log "offlineAreaEnd", offlineAreaEnd
-          console.log "onlineAreaStart", onlineAreaStart
-          console.log "onlineAreaEnd", onlineAreaEnd
+          #console.log "offlineAreaStart", offlineAreaStart
+          #console.log "offlineAreaEnd", offlineAreaEnd
+          #console.log "onlineAreaStart", onlineAreaStart
+          #console.log "onlineAreaEnd", onlineAreaEnd
           
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
-          console.log "offlineText", offlineText
-          console.log "onlineText", onlineText
+          #console.log "offlineText", offlineText
+          #console.log "onlineText", onlineText
           
           conflictPos = minPatchStart + offset
           
@@ -257,9 +257,9 @@ module.exports = OfflineChangeHandler =
           j++
           
 
-      console.log "OUTPUT DUMP: mergeAndIntegrate"
-      @logFull "opsForOffline", opsForOffline
-      @logFull "opsForOnline", opsForOnline
+      #console.log "OUTPUT DUMP: mergeAndIntegrate"
+      #@logFull "opsForOffline", opsForOffline
+      #@logFull "opsForOnline", opsForOnline
       callback(opsForOnline, opsForOffline)
 
   patch2ops: (patch) ->
@@ -299,7 +299,7 @@ module.exports = OfflineChangeHandler =
     patches = dmp.patch_make(oldText, newText)
     # extended patches
     extPatches = []
-    @logFull "DMP patches", patches
+    #@logFull "DMP patches", patches
     offset = 0
     for patch in patches
 
@@ -341,8 +341,8 @@ module.exports = OfflineChangeHandler =
         diffs:  patch.diffs
         start1: patch.start1 - offset
         start2: patch.start2
-        length1: patch.length1
-        length2: patch.length2
+        #length1: patch.length1
+        #length2: patch.length2
         end1: patch.start1 - offset + patch.length1 - 1
         end2: patch.start2 + patch.length2 - 1
         offset: patch.length2 - patch.length1
@@ -355,7 +355,7 @@ module.exports = OfflineChangeHandler =
       offset += extPatch.offset
       extPatches.push extPatch
     
-    @logFull "calculated patches", extPatches
+    #@logFull "calculated patches", extPatches
     return extPatches
 
   # getDocumentText generates a given document at a previous version

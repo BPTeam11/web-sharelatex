@@ -1,5 +1,6 @@
 sinon = require('sinon')
 chai = require('chai')
+util = require('util');
 should = chai.should()
 expect = chai.expect
 modulePath = "../../../../app/js/Features/OfflineChangeMerge/OfflineChangeHandler.js"
@@ -16,6 +17,11 @@ createOp = (pos, operation, text) ->
     v:  @version
     meta: 'mock_meta'
 
+logFull = (description, myObject) ->
+  console.log description, "=", util.inspect(myObject, {showHidden: false, depth: null})
+  
+arraysShouldEqual = (array1, array2) ->
+  JSON.stringify(array1).should.equal JSON.stringify(array2)
 
 describe "OfflineChangeHandler", ->
   beforeEach ->
@@ -28,39 +34,71 @@ describe "OfflineChangeHandler", ->
     @sessionId = "1234"
     @version = 42
     @callback = sinon.spy()
-  
+    
+    # most patches are relative to the original text. Banana for scale: C
+    # original:    |0        |10       |20       |30     |38
+    @oldDocText = "es war einmal ein kleiner zaun zzaaaaxx"
+    # inserted two b's
+    @offlineDocText = "es war einmal ein kleiner zaun zzaabbaaxx"
+    # deleted 'war', deleted 'aaaa'
+    @onlineDocText  = "es einmal ein kleiner zaun zzxx"
   
   describe "patchMake", ->
-    it "should", ->
-      console.log "offline patch:"
-      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaaxx", "es war einmal ein kleiner zaun zzaabbaaxx")
-      console.log "online patch:"
-      @OfflineChangeHandler.patchMake("es war einmal ein kleiner zaun zzaaaaxx", "es einmal ein kleiner zaun zzxx")
-  
-  
+    beforeEach ->
+      @expOffline = [ {
+        diffs: [ [ 0, 'aun zzaa' ], [ 1, 'bb' ], [ 0, 'aaxx' ] ],
+        start1: 27,
+        start2: 27,
+        end1: 38,
+        end2: 40,
+        offset: 2,
+        context1: 8,
+        context2: 4,
+        startWordDiff: 4,
+        endWordDiff: 0 } ]
+      @expOnline = [ {
+        diffs: [ [ 0, 'es ' ], [ -1, 'war ' ], [ 0, 'einm' ] ],
+        start1: 0,
+        start2: 0,
+        end1: 10,
+        end2: 6,
+        offset: -4,
+        context1: 3,
+        context2: 4,
+        startWordDiff: 3,
+        endWordDiff: 0 },
+      {
+        diffs: [ [ 0, 'n zz' ], [ -1, 'aaaa' ], [ 0, 'xx' ] ],
+        start1: 29,
+        start2: 25,
+        end1: 38,
+        end2: 30,
+        offset: -4,
+        context1: 4,
+        context2: 2,
+        startWordDiff: 2,
+        endWordDiff: 0 } ]
+    
+    it "should generate the correct patches", ->
+      offlinePatch = @OfflineChangeHandler.patchMake(@oldDocText, @offlineDocText)
+      onlinePatch  = @OfflineChangeHandler.patchMake(@oldDocText, @onlineDocText)
+      arraysShouldEqual offlinePatch, @expOffline
+      arraysShouldEqual onlinePatch,  @expOnline
   
   describe "mergeAndIntegrate", ->
     beforeEach ->
-      console.log ""
-      console.log ""
-    
+
     describe "when there is a simple conflict without context", ->
       beforeEach ->
         
         @oldDocText     = "aaaa"
         @offlineDocText = "aabbaa"
         @onlineDocText  = ""
-        
-        console.log "oldDocText:", @oldDocText
-        console.log "offlineText:", @offlineDocText
-        console.log "onlineText:", @onlineDocText
-        
+
         @ofp = [ {
           diffs: [ [ 0, 'aa' ], [ 1, 'bb' ], [ 0, 'aa' ] ],
           start1: 0,
           start2: 0,
-          length1: 4,
-          length2: 6,
           end1: 3,
           end2: 5,
           offset: 2,
@@ -70,8 +108,6 @@ describe "OfflineChangeHandler", ->
           diffs: [ [ -1, 'aaaa' ] ],
           start1: 0,
           start2: 0,
-          length1: 4,
-          length2: 0,
           end1: 3,
           end2: -1,
           offset: -4,
@@ -86,20 +122,10 @@ describe "OfflineChangeHandler", ->
     describe "when there is a simple conflict with context", ->
       beforeEach ->
 
-        @oldDocText     = "es war einmal ein kleiner zaun zzaaaaxx"
-        @offlineDocText = "es war einmal ein kleiner zaun zzaabbaaxx"
-        @onlineDocText  = "es einmal ein kleiner zaun zzxx"
-        
-        console.log "oldDocText:", @oldDocText
-        console.log "offlineText:", @offlineDocText
-        console.log "onlineText:", @onlineDocText
-        
         @ofp = [{
           diffs: [ [ 0, 'aun zzaa' ], [ 1, 'bb' ], [ 0, 'aaxx' ] ],
           start1: 27,
           start2: 27,
-          length1: 12,
-          length2: 14,
           end1: 38,
           end2: 40,
           offset: 2,
@@ -111,8 +137,6 @@ describe "OfflineChangeHandler", ->
           diffs: [ [ 0, 'es ' ], [ -1, 'war ' ], [ 0, 'einm' ] ],
           start1: 0,
           start2: 0,
-          length1: 11,
-          length2: 7,
           end1: 10,
           end2: 6,
           offset: -4,
@@ -124,8 +148,6 @@ describe "OfflineChangeHandler", ->
           diffs: [ [ 0, 'n zz' ], [ -1, 'aaaa' ], [ 0, 'xx' ] ],
           start1: 29,
           start2: 25,
-          length1: 10,
-          length2: 6,
           end1: 38,
           end2: 30,
           offset: -4,
@@ -138,7 +160,6 @@ describe "OfflineChangeHandler", ->
         @OfflineChangeHandler.mergeAndIntegrate @offlineDocText, @onlineDocText, @ofp, @onp,
           @callback
     
-  ###
   describe "getDocumentText", ->
     beforeEach ->
 
@@ -194,4 +215,5 @@ describe "OfflineChangeHandler", ->
         result = @OfflineChangeHandler.reverseOp(@docTextafterOp, {p:7, 'd': "<this> "})
         #console.log result
         result.should.equal @docTextbeforeOp
-  ###
+  
+
