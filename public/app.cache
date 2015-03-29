@@ -491,7 +491,7 @@ js/ide/pdfng/directives/pdfSpinner.js
 js/ide/pdfng/directives/pdfPage.js 
 js/ide/offline-store/OfflineStoreManager.js
 js/ide/offline-store/IndexedDbManager.js
-
+js/ide/CacheUpdater/CacheUpdater.js
 
 
 ### CSS ###

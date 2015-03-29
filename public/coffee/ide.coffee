@@ -10,6 +10,7 @@ define [
   "ide/binary-files/BinaryFilesManager"
   "ide/offline-store/OfflineStoreManager"
   "ide/offline-store/IndexedDbManager"
+  "ide/CacheUpdater/CacheUpdater"
   "ide/settings/index"
   "ide/share/index"
   "ide/chat/index"
@@ -42,6 +43,7 @@ define [
   BinaryFilesManager
   OfflineStoreManager
   IndexedDbManager
+  CacheUpdater
 ) ->
 
   App.controller "IdeController", ($scope, $timeout, ide) ->
@@ -78,6 +80,7 @@ define [
     ide.connectionManager = new ConnectionManager(ide, $scope)
     ide.indexedDbManager = new IndexedDbManager $scope
     ide.offlineStoreManager = new OfflineStoreManager ide
+    ide.cacheUpdater = new CacheUpdater ide
 
     setTimeout(
       () ->
