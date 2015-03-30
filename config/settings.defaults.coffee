@@ -110,11 +110,11 @@ module.exports =
 	# then websocketsUrl should be the same as siteUrl, with your reverse
 	# proxy responible for sending websocket traffic to the websocket service
 	# rather than connecting directly.
-	websocketsUrl: "http://localhost:3026"
+	websocketsUrl: "http://bp.raffael.link"
 
 	# Where your instance of ShareLaTeX can be found publically. Used in emails
 	# that are sent out, generated links, etc.
-	siteUrl : siteUrl = 'http://localhost:3000'
+	siteUrl : siteUrl = 'http://bp.raffael.link:3000'
 
 	# cookie domain
 	# use full domain for cookies to only be accesabble from that domain,
@@ -123,7 +123,7 @@ module.exports =
 	cookieName:"sharelatex.sid"
 
 	# Same, but with http auth credentials.
-	httpAuthSiteUrl: 'http://#{httpAuthUser}:#{httpAuthPass}@localhost:3000'
+	httpAuthSiteUrl: 'http://#{httpAuthUser}:#{httpAuthPass}@bp.raffael.link:3000'
 
 	# Security
 	# --------

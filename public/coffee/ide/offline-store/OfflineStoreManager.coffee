@@ -5,10 +5,11 @@ define () ->
 
       @ide.$scope.$on "offline:doc:change", (event, doc) =>
         console.log "ide event: offline:doc:change"
-        doc.deletePendingOps()
-        doc.deleteInflightOp()
-
-        @cacheDocument doc, true
+        setTimeout ()=>
+          @cacheDocument doc, true
+          doc.deletePendingOps()
+          doc.deleteInflightOp()
+        , 500
 
       @ide.socket.on "connect", () =>
         console.log "connect"
@@ -72,6 +73,7 @@ define () ->
 
 
     cacheDocument: (doc, changed) =>
+      console.log "================DEBUG================", doc.getSnapshot()
       @ide.indexedDbManager.put(
         "doc"
           doclines: doc.getSnapshot().split("\n")

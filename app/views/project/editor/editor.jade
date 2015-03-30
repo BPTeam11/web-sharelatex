@@ -33,11 +33,11 @@ div.full-size(
 		)
 
 	.ui-layout-east
-		div(ng-if="ui.pdfLayout == 'sideBySide'")
+		div(ng-if="ui.pdfLayout == 'sideBySide' && connection.connected")
 			include ./pdf
 
 	.ui-layout-resizer-controls.synctex-controls(
-		ng-show="!!pdf.url && settings.pdfViewer == 'pdfjs'"
+		ng-show="!!pdf.url && settings.pdfViewer == 'pdfjs' && connection.connected"
 		ng-controller="PdfSynctexController"
 	)
 		a.btn.btn-default.btn-xs(

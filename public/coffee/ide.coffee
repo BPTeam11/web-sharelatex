@@ -88,6 +88,7 @@ define [
       () ->
         #the condition $scope.project? ensures that if we are connected and then disconnect before the time runs out we don't load the project from IndexDB
         if(!(ide.socket.connected?) && !$scope.project?)
+          console.log "Schitt wir sind offline"
           #dummy project:
 
           ide.offlineStoreManager.joinProject ide.project_id, (error, project, permissionsLevel, protocolVersion) =>
