@@ -130,7 +130,7 @@ module.exports =
 	security:
 		sessionSecret: sessionSecret
 
-	httpAuthUsers: httpAuthUserss
+	httpAuthUsers: httpAuthUsers
 
 	# Default features
 	# ----------------
