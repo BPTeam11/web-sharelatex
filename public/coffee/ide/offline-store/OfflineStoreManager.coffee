@@ -3,7 +3,7 @@ define () ->
     constructor: (@ide) ->
 
 
-      @ide.$scope.$on "offline:doc:change", (event, doc) =>
+      @ide.$scope.$on "doc:change", (event, doc) =>
         console.log "ide event: offline:doc:change"
         setTimeout ()=>
           @cacheDocument doc, true

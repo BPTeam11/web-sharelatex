@@ -257,8 +257,7 @@ define [
     _bindToShareJsDocEvents: () ->
       @doc.on "error", (error, meta) => @_onError error, meta
       @doc.on "change", (operation) =>
-        if !@connected
-          @ide.$scope.$emit "offline:doc:change", this
+        @ide.$scope.$emit "doc:change", this
       @doc.on "externalUpdate", (update) =>
         @ide.pushEvent "externalUpdate",
           doc_id: @doc_id
