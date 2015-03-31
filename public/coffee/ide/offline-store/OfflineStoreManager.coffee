@@ -1,15 +1,27 @@
 define () ->
   class OfflineStoreManager
     constructor: (@ide) ->
-
+      @lastCache = 0
 
       @ide.$scope.$on "doc:change", (event, doc) =>
-        console.log "ide event: offline:doc:change"
-        setTimeout ()=>
+        if @timeout?
+          clearTimeout @timeout
+
+        if !@ide.$scope.connection.connected || Date.now() - @lastCache >= 5000
+          @timeout = null
           @cacheDocument doc, true
-          doc.deletePendingOps()
-          doc.deleteInflightOp()
-        , 500
+          if !@ide.$scope.connection.connected 
+            doc.deletePendingOps()
+            doc.deleteInflightOp()
+          
+        else
+          @timeout = setTimeout ()=>
+            @timeout = null
+            @cacheDocument doc, true
+            if !@ide.$scope.connection.connected 
+              doc.deletePendingOps()
+              doc.deleteInflightOp()
+          , 2000
 
       @ide.socket.on "connect", () =>
         console.log "connect"
@@ -21,6 +33,7 @@ define () ->
           console.log "Error looking up offline changes: #{err}"
         else
           console.log "Uploading offline changes:"
+          curDocChanged = false
           if cursor
             doc_id = cursor.value.doc_id
 
@@ -38,7 +51,8 @@ define () ->
                   console.log "ops:"
                   console.log data
 
-                  if doc_id == @ide.editorManager.getCurrentDocId()
+                  if doc_id == @ide.editorManager.getCurrentDocId() && @ide.editorManager.getCurrentDoc()?
+                    curDocChanged = true
                     console.log "merged doc is currently open, applying updates..."
                     doc = @ide.editorManager.getCurrentDoc()
                     sjsDoc = doc.doc
@@ -57,7 +71,6 @@ define () ->
                     console.log "updates done"
                     console.log "setting version to #{data.newVersion}"
                     sjsDoc._doc.version = data.newVersion
-                    console.log "unpausing document"
                     doc.unpause()
 
                 .error (data, status) ->
@@ -71,8 +84,11 @@ define () ->
               if err?
                 console.log err
 
+            if !curDocChanged
+              @ide.editorManager.getCurrentDoc()?.unpause()
 
     cacheDocument: (doc, changed) =>
+      @lastCache = Date.now()   
       console.log "================DEBUG================", doc.getSnapshot()
       @ide.indexedDbManager.put(
         "doc"

@@ -41,7 +41,7 @@ define [
 				@trigger "remoteop"
 
 			@_bindToDocChanges(@_doc)
-
+                        
 			@processUpdateFromServer
 				open: true
 				v: version
@@ -50,8 +50,6 @@ define [
 		submitOp: (args...) -> @_doc.submitOp(args...)
 
 		processUpdateFromServer: (message) ->
-			console.log "processing update:"
-			console.log message
 
 			if message.v < @_doc.version
 				if message.op?
@@ -77,7 +75,6 @@ define [
 			for update, i in updates
 				update.v   = @_doc.version
 				update.doc = @doc_id
-				@processUpdateFromServer(update)
 
 		getSnapshot: () -> @_doc.snapshot
 		getVersion: () -> @_doc.version

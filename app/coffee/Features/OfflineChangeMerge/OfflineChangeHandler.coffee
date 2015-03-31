@@ -91,7 +91,7 @@ module.exports = OfflineChangeHandler =
                   
                   #@logFull "mergedChange", mergedChange
                   callback mergedChange, opsForOffline,
-                    onlineVersion + 1
+                    onlineVersion + opsForOnline.length
     
   ###
     offline- and online-Patch need to be sorted
