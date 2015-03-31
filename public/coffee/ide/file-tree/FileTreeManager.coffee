@@ -30,6 +30,7 @@ define [
 						type: "doc"
 					}
 					@recalculateDocList()
+					@ide.offlineStoreManager.cacheRecivedDocument doc
 
 			@ide.socket.on "reciveNewFile", (parent_folder_id, file) =>
 				parent_folder = @findEntityById(parent_folder_id) or @$scope.rootFolder
@@ -218,7 +219,42 @@ define [
 						doc:  entity
 						path: path
 					}
-			
+			# Do not update the project when the rootFolder is not initialized
+			if @$scope.rootFolder.children.length != 0
+				newProjectRootFolder = @_parseRootFolderToProjectRootFolder(@$scope.rootFolder)
+				@ide.offlineStoreManager.updateProject(newProjectRootFolder)
+					
+
+		_parseRootFolderToProjectRootFolder : (rawFolder) ->
+			doclist = []
+			filelist = []
+			folderlist = []
+
+			for child in rawFolder.children or []
+				if child.type == "doc"
+					doclist.push {
+						name : child.name
+						_id : child.id
+					}
+				if child.type == "file"
+					filelist.push {
+						name : child.name
+						_id : child.id
+					}
+				if child.type == "folder"
+					folderlist.push @_parseRootFolderToProjectRootFolder(child)
+
+
+			folder = {
+				_id : rawFolder.id
+				name : rawFolder.name
+				docs : doclist
+				fileRefs : filelist
+				folders : folderlist
+			}
+			return folder
+
+
 		getEntityPath: (entity) ->
 			@_getEntityPathInFolder @$scope.rootFolder, entity
 

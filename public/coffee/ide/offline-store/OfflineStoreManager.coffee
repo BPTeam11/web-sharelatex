@@ -87,6 +87,19 @@ define () ->
             console.log "Error marking doc #{doc.doc_id} changed:"
             console.log err
 
+
+    cacheRecivedDocument: (doc) =>
+      console.log "================DEBUG================", doc.lines
+      @ide.indexedDbManager.put(
+        "doc"
+          doclines: doc.lines
+          version: doc.rev
+          doc_id: doc._id
+        (res, err) -> if(err?) then console.log "Error caching document: #{err}")
+
+
+
+
     joinNewDoc: (id, callback = (error, doclines, version) ->) ->
       @ide.indexedDbManager.get "doc", id, (res, err) ->
         if err?
@@ -129,5 +142,18 @@ define () ->
     createDoc : (name, id, csrfToken) ->
       if id?
         console.log("OfflineManager: " + name + " " + " id: " + id + " csrfToken: " + csrfToken)
+
+
+    updateProject : (newRootFolder) -> 
+      updated_project = @ide.$scope.project
+      updated_project.rootFolder[0] = newRootFolder
+      @ide.indexedDbManager.put(
+        "project"
+          id: updated_project._id
+          info: updated_project
+          protocolVersion: @ide.$scope.protocolVersion
+          permissionsLevel: @ide.$scope.permissionsLevel
+        (res, err) -> if(err?) then console.log "Error caching project: #{err}")
+
 
 
