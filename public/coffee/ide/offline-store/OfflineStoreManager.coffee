@@ -33,6 +33,8 @@ define () ->
 
     uploadOfflineChanges: () =>
       console.log "Uploading offline changes:"
+      currentDoc = @ide.editorManager.getCurrentDoc()
+      console.log "current doc:", currentDoc
       curDocChanged = false
 
       @ide.indexedDbManager.openCursor "changedOffline", (cursor, err) =>
@@ -50,14 +52,25 @@ define () ->
                 doc: doc,  #upload the whole document (version, Snapshot, doc_id)
                 _csrf: window.csrfToken #for security/authentication reasons
               }
+
+              mergingCurrentDoc = doc_id == @ide.editorManager.getCurrentDocId() && currentDoc?
+
+              if mergingCurrentDoc
+                console.log "curDocChanged"
+                console.log doc_id
+                curDocChanged = true
+
               @ide.$http.post "/project/#{@ide.project_id}/merge/#{doc_id}", upload
                 .success (data) =>
-                  console.log "merge of doc #{doc_id} complete"
-                  console.log "ops:"
-                  console.log data
+                  #console.log "merge of doc #{doc_id} complete"
+                  #console.log "ops:"
+                  #console.log data
+                  
 
-                  if doc_id == @ide.editorManager.getCurrentDocId() && @ide.editorManager.getCurrentDoc()?
-                    curDocChanged = true
+                  if mergingCurrentDoc
+                    console.log currentDoc
+                    #@ide.editorManager.openDoc currentDoc, true
+                    ###
                     console.log "merged doc is currently open, applying updates..."
                     doc = @ide.editorManager.getCurrentDoc()
                     sjsDoc = doc.doc
@@ -74,7 +87,7 @@ define () ->
                     console.log "updates done"
                     console.log "setting version to #{data.newVersion}"
                     sjsDoc._doc.version = data.newVersion
-                    doc.unpause()
+                    doc.unpause()###
 
                 .error (data, status) ->
                   console.log "merge error: #{status}"
@@ -87,11 +100,16 @@ define () ->
               if err?
                 console.log err
 
+            console.log "curDocChanged:", curDocChanged
+
             if !curDocChanged
-              @ide.editorManager.getCurrentDoc()?.unpause()
+              currentDoc?.unpause()
 
             for listener in @mergeListeners
               listener()
+
+            if curDocChanged
+              window.location.reload()
 
     cacheDocument: (doc, changed) =>
       @lastCache = Date.now()
