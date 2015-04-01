@@ -22,6 +22,7 @@ module.exports = EditorUpdatesController =
 			callback(error)
 
 	applyOtUpdate: (client, project_id, doc_id, update) ->
+		console.log "EditorUpdatesController: Got update!", update
 		update.meta ||= {}
 		update.meta.source = client.id
 		client.get "user_id", (error, user_id) ->

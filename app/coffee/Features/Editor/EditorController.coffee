@@ -13,6 +13,7 @@ DocumentUpdaterHandler = require('../DocumentUpdater/DocumentUpdaterHandler')
 LimitationsManager = require("../Subscription/LimitationsManager")
 AuthorizationManager = require("../Security/AuthorizationManager")
 EditorRealTimeController = require("./EditorRealTimeController")
+EditorUpdatesController = require("./EditorUpdatesController")
 TrackChangesManager = require("../TrackChanges/TrackChangesManager")
 OfflineChangeHandler = require("../OfflineChangeMerge/OfflineChangeHandler")
 Settings = require('settings-sharelatex')
@@ -216,13 +217,14 @@ module.exports = EditorController =
 
 		OfflineChangeHandler.mergeWhenPossible project_id, user_id, sessionId, doc,
 			(onlineChanges, clientMergeOps, newVersion) =>
-				for change in onlineChanges
-					console.log "mergeDoc: received change:", change
+				for update in onlineChanges
+					console.log "mergeDoc: received change:", update
 					# TODO maybe (dunno if this is a big problem): make sure the pending
 					# queue is empty so that no updates are insserted while changes are
 					# computed -> lock the queue
-					DocumentUpdaterHandler.queueChange project_id, doc_id, change, (err)  ->
-						callback(err) if err?
+					EditorUpdatesController.applyOtUpdate(user_id, project_id, doc_id, update)
+					#DocumentUpdaterHandler.queueChange project_id, doc_id, change, (err)  ->
+					#	callback(err) if err?
 				callback null, clientMergeOps, newVersion
 
 

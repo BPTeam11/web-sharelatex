@@ -61,7 +61,7 @@ define [], () ->
           trans.oncomplete = (e) -> callback event.target.result
 
     put: (store, data, callback = (key, error)-> ) =>
-      console.log "~~~~~~~~~~~~~DEBUG~~~~~~~~~~~~", data
+      #console.log "~~~~~~~~~~~~~DEBUG~~~~~~~~~~~~", data
       @readyHandler () =>
         trans = @db.transaction([store], "readwrite")
         trans.onerror = (event) -> callback null, event.target.errorCode

@@ -15,7 +15,7 @@ module.exports = DocumentUpdaterHandler =
 	
 	queueChange : (project_id, doc_id, change, callback = ()->)->
 		jsonChange = JSON.stringify change
-		console.log "jsonChange:", jsonChange
+		console.log "DocumentUpdaterHandler: jsonChange:", jsonChange
 		doc_key = keys.combineProjectIdAndDocId(project_id, doc_id)
 		multi = rclient.multi()
 		multi.rpush keys.pendingUpdates(doc_id:doc_id), jsonChange

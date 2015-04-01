@@ -57,7 +57,7 @@ define () ->
                     doc = @ide.editorManager.getCurrentDoc()
                     sjsDoc = doc.doc
                     version = sjsDoc._doc.version
-                    #console.log "applying", data.ops
+                    console.log "applying", data.ops
                     for op in data.ops
                       msg =
                         op: op

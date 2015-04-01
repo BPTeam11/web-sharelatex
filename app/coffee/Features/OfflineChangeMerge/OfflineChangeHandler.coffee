@@ -64,8 +64,8 @@ module.exports = OfflineChangeHandler =
   mergeWhenPossible: (project_id, user_id, sessionId, doc,
     callback = (mergedChange, clientMergeOps, newVersion) ->)->
 
-      #console.log "MergeHandler here :)  Old version:"
-      #console.log doc.version
+      console.log "MergeHandler here :)  Old version:"
+      console.log doc.version
       
       offlineDocText = doc.doclines.join('\n')
       @getDocumentText project_id, doc.doc_id, doc.version,
@@ -81,10 +81,11 @@ module.exports = OfflineChangeHandler =
                       doc: doc.doc_id
                       op: op
                       v : version
-                      meta : {
-                        source: sessionId
-                        user_id: user_id
-                      }
+                      #meta : {
+                      #  source: sessionId
+                      #  user_id: user_id
+                      #}
+                      meta: {}
                     }
                     onlineChanges.push change
                     version++
@@ -104,9 +105,9 @@ module.exports = OfflineChangeHandler =
   mergeAndIntegrate: (offlineDocText, onlineDocText, ofp, onp,
     callback = (opsForOnline, opsForOffline) -> ) ->
 
-      #console.log "PARAMETER DUMP: mergeAndIntegrate"
-      #console.log "offlineDocText", offlineDocText
-      #console.log "onlineDocText", onlineDocText
+      console.log "PARAMETER DUMP: mergeAndIntegrate"
+      console.log "offlineDocText", offlineDocText
+      console.log "onlineDocText", onlineDocText
       @logFull "ofp", ofp
       @logFull "onp", onp
       
@@ -220,10 +221,10 @@ module.exports = OfflineChangeHandler =
           onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2
           onlineAreaEnd    = maxPatchEnd   - onp[j].end1   + onp[j].end2
           
-          #console.log "offlineAreaStart", offlineAreaStart
-          #console.log "offlineAreaEnd", offlineAreaEnd
-          #console.log "onlineAreaStart", onlineAreaStart
-          #console.log "onlineAreaEnd", onlineAreaEnd
+          console.log "offlineAreaStart", offlineAreaStart
+          console.log "offlineAreaEnd", offlineAreaEnd
+          console.log "onlineAreaStart", onlineAreaStart
+          console.log "onlineAreaEnd", onlineAreaEnd
           
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
@@ -320,7 +321,7 @@ module.exports = OfflineChangeHandler =
     patches = dmp.patch_make(oldText, newText)
     # extended patches
     extPatches = []
-    #@logFull "DMP patches", patches
+    @logFull "DMP patches", patches
     offset = 0
     for patch in patches
 
@@ -401,7 +402,7 @@ module.exports = OfflineChangeHandler =
       offset += extPatch.offset
       extPatches.push extPatch
     
-    #@logFull "calculated patches", extPatches
+    @logFull "calculated patches", extPatches
     return extPatches
 
   # getDocumentText generates a given document at a previous version
