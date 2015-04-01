@@ -175,7 +175,7 @@ module.exports = OfflineChangeHandler =
         # offlinePatch first, no conflict
         if (ofp[i].end1 < onp[j].start1)
             # integrate offlinePatch
-            #ofp[i].start2 += offset
+            ofp[i].start3 += offset
             offset += ofp[i].offset
             opsForOnline.push @patch2ops(ofp[i])...
             i++
@@ -183,7 +183,7 @@ module.exports = OfflineChangeHandler =
         # onlinePatch first, no conflict
         else if (onp[j].end1 < ofp[i].start1)
             # integrate onlinePatch
-            #onp[j].start2 += offset
+            onp[j].start3 += offset
             offset += onp[j].offset
             opsForOffline.push @patch2ops(onp[j])...
             j++
@@ -228,10 +228,10 @@ module.exports = OfflineChangeHandler =
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
-          #console.log "offlineText", offlineText
-          #console.log "onlineText", onlineText
           
-          conflictPos = minPatchStart #+ offset
+          # after applying all previous patches, the position for both sides
+          # is the same
+          conflictPos = minPatchStart + offset
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
@@ -256,13 +256,15 @@ module.exports = OfflineChangeHandler =
           
           i++
           j++
-          
 
       console.log "OUTPUT DUMP: mergeAndIntegrate"
       @logFull "opsForOffline", opsForOffline
       @logFull "opsForOnline", opsForOnline
       callback(opsForOnline, opsForOffline)
 
+  # converts DMP patches to OT operations
+  # the start3 property is the current start position after applying
+  # previous patches from both sides
   patch2ops: (patch) ->
     ops = []
     # offset inside the patch
@@ -273,11 +275,11 @@ module.exports = OfflineChangeHandler =
           offset += diff[1].length
 
         when 1 # insert
-          ops.push { p: patch.start2 + offset, i: diff[1] }
+          ops.push { p: patch.start3 + offset, i: diff[1] }
           offset += diff[1].length
 
         when -1 # delete
-          ops.push { p: patch.start2 + offset, d: diff[1] }
+          ops.push { p: patch.start3 + offset, d: diff[1] }
           # offset inside of the patch does not change. E.g. delete pos 5-8
           # then we want to continue at pos 5
 
