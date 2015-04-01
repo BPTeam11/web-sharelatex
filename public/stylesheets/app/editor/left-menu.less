@@ -33,13 +33,15 @@
 
 	ul.nav {
 		a {
-			cursor: pointer;
-			&:hover, &:active {
-				background-color: @link-color;
-				color: white;
-				i {
-					color: white;
-				}
+      &:not(.disabled) {
+			  cursor: pointer;
+		  	&:hover, &:active {
+			  	background-color: @link-color;
+			  	color: white;
+			  	i {
+			  		color: white;
+			  	}
+        }
 			}
 			i {
 				color: @gray;
