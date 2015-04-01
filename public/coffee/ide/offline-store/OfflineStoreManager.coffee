@@ -96,9 +96,7 @@ define () ->
             cursor.continue()
 
           else # processed all updates
-            @ide.indexedDbManager.clear "changedOffline", (err) ->
-              if err?
-                console.log err
+            
 
             console.log "curDocChanged:", curDocChanged
 
@@ -108,8 +106,13 @@ define () ->
             for listener in @mergeListeners
               listener()
 
-            if curDocChanged
-              window.location.reload()
+            @ide.indexedDbManager.clear "changedOffline", (err) ->
+              if err?
+                console.log err
+
+              if curDocChanged
+                window.location.reload()
+            
 
     cacheDocument: (doc, changed) =>
       @lastCache = Date.now()
