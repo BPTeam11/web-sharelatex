@@ -228,18 +228,18 @@ module.exports = OfflineChangeHandler =
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
-          
+
           # after applying all previous patches, the position for both sides
           # is the same
           conflictPos = minPatchStart + offset
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
-            p: conflictPos
+            p: offlineAreaStart
             d: offlineText
             }
           opsForOnline.push {
-            p: conflictPos
+            p: onlineAreaStart
             d: onlineText
             }
           
@@ -247,11 +247,16 @@ module.exports = OfflineChangeHandler =
           mergeText = onlineConflictBegin + onlineText + onlineConflictEnd +
             offlineConflictBegin + offlineText + offlineConflictEnd
           
-          mergeInsert = { p: conflictPos, i: mergeText }
-          
-          opsForOffline.push mergeInsert
-          opsForOnline.push mergeInsert
-          
+          # insert merge text
+          opsForOffline.push {
+            p: offlineAreaStart
+            i: mergeText
+            }
+          opsForOnline.push {
+            p: onlineAreaStart
+            i: mergeText
+            }          
+
           offset += mergeText.length
           
           i++
@@ -289,7 +294,9 @@ module.exports = OfflineChangeHandler =
 
   getPatches: (oldDocText, offlineDocText, onlineDocText, callback = (ofp, onp) -> ) ->
     ofp = @patchMake(oldDocText, offlineDocText)
+    @logFull "ofp:", ofp
     onp = @patchMake(oldDocText, onlineDocText)
+    @logFull "onp:", onp
     callback(ofp, onp)
 
   # this is a wrapper for dmp.patch_make that will set correct start1 values
@@ -313,7 +320,7 @@ module.exports = OfflineChangeHandler =
     patches = dmp.patch_make(oldText, newText)
     # extended patches
     extPatches = []
-    @logFull "DMP patches", patches
+    #@logFull "DMP patches", patches
     offset = 0
     for patch in patches
 
