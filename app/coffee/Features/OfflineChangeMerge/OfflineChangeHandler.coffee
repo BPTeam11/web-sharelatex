@@ -74,24 +74,25 @@ module.exports = OfflineChangeHandler =
             (ofp, onp) =>
               @mergeAndIntegrate offlineDocText, onlineDocText, ofp, onp,
                 (opsForOnline, opsForOffline) =>
-
-                  # ignore conflicts for now
-                  # this may be splitted up into single ops:
-                  mergedChange = {
-                    doc: doc.doc_id
-                    op: opsForOnline
-                    v : onlineVersion
-                    meta : {
-                      source: sessionId
-                      user_id: user_id
+                  onlineChanges = []
+                  version = onlineVersion
+                  for op in opsForOnline
+                    change = {
+                      doc: doc.doc_id
+                      op: op
+                      v : version
+                      meta : {
+                        source: sessionId
+                        user_id: user_id
+                      }
                     }
-                  }
-                  #console.log "onlineVersion", onlineVersion
-                  #console.log "opsForOnline.length", opsForOnline.length
+                    onlineChanges.push change
+                    version++
                   
-                  #@logFull "mergedChange", mergedChange
-                  callback mergedChange, opsForOffline,
-                    onlineVersion + opsForOnline.length
+                  @logFull "onlineChanges", onlineChanges
+                  @logFull "opsForOffline", opsForOffline
+                  console.log "new version:", version
+                  callback onlineChanges, opsForOffline, version
     
   ###
     offline- and online-Patch need to be sorted
@@ -106,8 +107,8 @@ module.exports = OfflineChangeHandler =
       #console.log "PARAMETER DUMP: mergeAndIntegrate"
       #console.log "offlineDocText", offlineDocText
       #console.log "onlineDocText", onlineDocText
-      #@logFull "ofp", ofp
-      #@logFull "onp", onp
+      @logFull "ofp", ofp
+      @logFull "onp", onp
       
       # utilizing heavy iterative style here for efficiency
 
@@ -145,7 +146,7 @@ module.exports = OfflineChangeHandler =
         # add remaining online patches
         if (i == ofp.length)
           for patch, index in onp when index >= j
-            patch.start2 += offset
+            #patch.start2 += offset
             offset += patch.offset
             opsForOffline.push @patch2ops(patch)...
           break # quit while loop
@@ -153,7 +154,7 @@ module.exports = OfflineChangeHandler =
         # add remaining offline patches
         if (j == onp.length)
           for patch, index in ofp when index >= i
-            patch.start2 += offset
+            #patch.start2 += offset
             offset += patch.offset
             opsForOnline.push @patch2ops(patch)...
           break # quit while loop
@@ -174,7 +175,7 @@ module.exports = OfflineChangeHandler =
         # offlinePatch first, no conflict
         if (ofp[i].end1 < onp[j].start1)
             # integrate offlinePatch
-            ofp[i].start2 += offset
+            #ofp[i].start2 += offset
             offset += ofp[i].offset
             opsForOnline.push @patch2ops(ofp[i])...
             i++
@@ -182,7 +183,7 @@ module.exports = OfflineChangeHandler =
         # onlinePatch first, no conflict
         else if (onp[j].end1 < ofp[i].start1)
             # integrate onlinePatch
-            onp[j].start2 += offset
+            #onp[j].start2 += offset
             offset += onp[j].offset
             opsForOffline.push @patch2ops(onp[j])...
             j++
@@ -230,7 +231,7 @@ module.exports = OfflineChangeHandler =
           #console.log "offlineText", offlineText
           #console.log "onlineText", onlineText
           
-          conflictPos = minPatchStart + offset
+          conflictPos = minPatchStart #+ offset
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
@@ -257,9 +258,9 @@ module.exports = OfflineChangeHandler =
           j++
           
 
-      #console.log "OUTPUT DUMP: mergeAndIntegrate"
-      #@logFull "opsForOffline", opsForOffline
-      #@logFull "opsForOnline", opsForOnline
+      console.log "OUTPUT DUMP: mergeAndIntegrate"
+      @logFull "opsForOffline", opsForOffline
+      @logFull "opsForOnline", opsForOnline
       callback(opsForOnline, opsForOffline)
 
   patch2ops: (patch) ->
@@ -292,6 +293,17 @@ module.exports = OfflineChangeHandler =
   # this is a wrapper for dmp.patch_make that will set correct start1 values
   # as well as context markers that specify the length of the context around
   # a patch, as well as end tags
+  # resulting patch entries have the following meaning:
+  #   diffs:  what to do (0=context 1=insert -1=delete
+  #   start1: patch start in the original document
+  #   start2: patch start after applying previous patches
+  #   end1:   patch end in the original document
+  #   end2:   patch end after applying previous patches
+  #   offset: length diff before/after patch
+  #   startWordDiff: distance between patch start and the last word start in
+  #                  the leading context
+  #   endWordDiff: distance between patch end and the first word end in
+  #                the trailing context
   patchMake: (oldText, newText) ->
     # If this is smaller then the algorithm is more careful.
     # For high Threshold it will override even if there's a confilct.
@@ -299,43 +311,65 @@ module.exports = OfflineChangeHandler =
     patches = dmp.patch_make(oldText, newText)
     # extended patches
     extPatches = []
-    #@logFull "DMP patches", patches
+    @logFull "DMP patches", patches
     offset = 0
     for patch in patches
 
-      # extract context length, AND
-      
       # extract nearest words offset from context
       # these are relative to start and end positions, e.g.:
       # given the context "aa bc" starting at pos 0,
       # startWordDiff = 3
-      # given the context "ee fg" ending at pos 10,
+      # given the context "eeeee fg" ending at pos 10,
       # endWordDiff = 3
       startWordDiff = 0
       endWordDiff   = 0
-      
+      context1 = 0 # context 1 length
+      context2 = 0 # context 2 length
+      deleteContext1 = false
+      deleteContext2 = false
+
       # start context
       firstPatchEntry = patch.diffs[0]
       if (firstPatchEntry[0] == 0)
         contextString = firstPatchEntry[1]
         context1 = contextString.length
-        for char, pos in contextString[0 .. context1 - 1]
-          if char == '\n' or char == ' '
-            startWordDiff = pos + 1
-      else
-        context1 = 0
-      
+        lastContextChar = contextString[context1 - 1]
+        nextPatchEntry  = patch.diffs[1] # assuming that this is not context
+        firstChangeChar = nextPatchEntry[1][0]
+        if firstChangeChar == ' ' or firstChangeChar == '\n' or
+          lastContextChar == ' ' or lastContextChar == '\n'
+            deleteContext1 = true
+        else
+          for char, pos in contextString[0 .. context1 - 2]
+            if char == '\n' or char == ' '
+              startWordDiff = pos + 1
+          
       # end context
       lastPatchEntry = patch.diffs[patch.diffs.length - 1]
       if (lastPatchEntry[0] == 0)
         contextString = lastPatchEntry[1]
         context2 = contextString.length
-        for char, pos in contextString[0 .. context2 - 1]
-          if char == '\n' or char == ' '
-            endWordDiff = context2 - pos + 1
-            break
-      else
-        context2 = 0
+        firstContextChar = contextString[0]
+        previousPatchEntry = patch.diffs[patch.diffs.length - 2]
+        lastChangeChar = previousPatchEntry[previousPatchEntry.length - 1]
+        if lastChangeChar == ' ' or lastChangeChar == '\n' or
+          firstContextChar == ' ' or firstContextChar == '\n'
+            deleteContext2 = true
+        else
+          for char, pos in contextString[0 .. context2 - 2]
+            if char == '\n' or char == ' '
+              endWordDiff = context2 - pos # this is correct
+              break
+
+      # delete context if needed
+      if deleteContext1 == true
+        diffs.shift() # remove first entry
+        start1 += context1
+        start2 += context1
+      if deleteContext2 == true
+        diffs.pop() # remove first entry
+        end1 -= context2
+        end2 -= context2
       
       extPatch = {
         diffs:  patch.diffs
@@ -346,16 +380,17 @@ module.exports = OfflineChangeHandler =
         end1: patch.start1 - offset + patch.length1 - 1
         end2: patch.start2 + patch.length2 - 1
         offset: patch.length2 - patch.length1
-        context1: context1
-        context2: context2
+        #context1: context1
+        #context2: context2
         startWordDiff: startWordDiff
         endWordDiff: endWordDiff
         }
+      # prevent negative end. Not necessarily needed
       #extPatch.end2 -= 1 unless (extPatch.length2 == 0)
       offset += extPatch.offset
       extPatches.push extPatch
     
-    #@logFull "calculated patches", extPatches
+    @logFull "calculated patches", extPatches
     return extPatches
 
   # getDocumentText generates a given document at a previous version

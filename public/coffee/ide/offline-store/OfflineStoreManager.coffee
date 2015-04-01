@@ -57,16 +57,16 @@ define () ->
                     doc = @ide.editorManager.getCurrentDoc()
                     sjsDoc = doc.doc
                     version = sjsDoc._doc.version
-                    console.log "applying", data.ops
-                    msg =
-                      op: data.ops
-                      v: version
-                      doc: sjsDoc._doc.name
-                      meta: {}
+                    #console.log "applying", data.ops
+                    for op in data.ops
+                      msg =
+                        op: op
+                        v: version
+                        doc: sjsDoc._doc.name
+                        meta: {}
                       
-                    # fixme: this is *not* an usual update from server
-                    sjsDoc.processUpdateFromServer msg
-                    version++
+                      sjsDoc.processUpdateFromServer msg
+                      version++
                       
                     console.log "updates done"
                     console.log "setting version to #{data.newVersion}"
