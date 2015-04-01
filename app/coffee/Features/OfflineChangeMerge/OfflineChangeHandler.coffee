@@ -89,8 +89,8 @@ module.exports = OfflineChangeHandler =
                     onlineChanges.push change
                     version++
                   
-                  @logFull "onlineChanges", onlineChanges
-                  @logFull "opsForOffline", opsForOffline
+                  @logFull "------------onlineChanges-----------", onlineChanges
+                  @logFull "------------opsForOffline-----------", opsForOffline
                   console.log "new version:", version
                   callback onlineChanges, opsForOffline, version
     
@@ -146,7 +146,7 @@ module.exports = OfflineChangeHandler =
         # add remaining online patches
         if (i == ofp.length)
           for patch, index in onp when index >= j
-            #patch.start2 += offset
+            patch.start3 += offset
             offset += patch.offset
             opsForOffline.push @patch2ops(patch)...
           break # quit while loop
@@ -154,7 +154,7 @@ module.exports = OfflineChangeHandler =
         # add remaining offline patches
         if (j == onp.length)
           for patch, index in ofp when index >= i
-            #patch.start2 += offset
+            patch.start3 += offset
             offset += patch.offset
             opsForOnline.push @patch2ops(patch)...
           break # quit while loop
@@ -363,20 +363,11 @@ module.exports = OfflineChangeHandler =
               endWordDiff = context2 - pos # this is correct
               break
 
-      # delete context if needed
-      if deleteContext1 == true
-        diffs.shift() # remove first entry
-        start1 += context1
-        start2 += context1
-      if deleteContext2 == true
-        diffs.pop() # remove first entry
-        end1 -= context2
-        end2 -= context2
-      
       extPatch = {
         diffs:  patch.diffs
         start1: patch.start1 - offset
         start2: patch.start2
+        start3: patch.start1 - offset
         #length1: patch.length1
         #length2: patch.length2
         end1: patch.start1 - offset + patch.length1 - 1
@@ -389,10 +380,21 @@ module.exports = OfflineChangeHandler =
         }
       # prevent negative end. Not necessarily needed
       #extPatch.end2 -= 1 unless (extPatch.length2 == 0)
+
+      # delete context if needed
+      if deleteContext1 == true
+        extPatch.diffs.shift() # remove first entry
+        extPatch.start1 += context1
+        extPatch.start2 += context1
+      if deleteContext2 == true
+        extPatch.diffs.pop() # remove first entry
+        extPatch.end1 -= context2
+        extPatch.end2 -= context2
+
       offset += extPatch.offset
       extPatches.push extPatch
     
-    @logFull "calculated patches", extPatches
+    #@logFull "calculated patches", extPatches
     return extPatches
 
   # getDocumentText generates a given document at a previous version
