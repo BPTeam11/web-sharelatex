@@ -122,7 +122,8 @@ module.exports = OfflineChangeHandler =
       
       # current offsets from the old doc. These will be added to start2 when
       # finally applying a patch
-      offset = 0
+      onOffset = 0
+      ofOffset = 0
       
       # if both ofp and onp are empty, there are no merges and no conflicts
       if (ofp.length == onp.length == 0)
@@ -145,16 +146,16 @@ module.exports = OfflineChangeHandler =
         # add remaining online patches
         if (i == ofp.length)
           for patch, index in onp when index >= j
-            patch.start2 += offset
-            offset += patch.offset
+            patch.start2 += onOffset
+            #offset += patch.offset
             opsForOffline.push @patch2ops(patch)...
           break # quit while loop
         
         # add remaining offline patches
         if (j == onp.length)
           for patch, index in ofp when index >= i
-            patch.start2 += offset
-            offset += patch.offset
+            patch.start2 += ofOffset
+            #offset += patch.offset
             opsForOnline.push @patch2ops(patch)...
           break # quit while loop
           
@@ -174,16 +175,16 @@ module.exports = OfflineChangeHandler =
         # offlinePatch first, no conflict
         if (ofp[i].end1 < onp[j].start1)
             # integrate offlinePatch
-            ofp[i].start2 += offset
-            offset += ofp[i].offset
+            ofp[i].start2 += ofOffset
+            onOffset += ofp[i].offset
             opsForOnline.push @patch2ops(ofp[i])...
             i++
         
         # onlinePatch first, no conflict
         else if (onp[j].end1 < ofp[i].start1)
             # integrate onlinePatch
-            onp[j].start2 += offset
-            offset += onp[j].offset
+            onp[j].start2 += onOffset
+            ofOffset += onp[j].offset
             opsForOffline.push @patch2ops(onp[j])...
             j++
 
@@ -230,7 +231,7 @@ module.exports = OfflineChangeHandler =
           #console.log "offlineText", offlineText
           #console.log "onlineText", onlineText
           
-          conflictPos = minPatchStart + offset
+          conflictPos = minPatchStart #+ offset
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
@@ -251,7 +252,8 @@ module.exports = OfflineChangeHandler =
           opsForOffline.push mergeInsert
           opsForOnline.push mergeInsert
           
-          offset += mergeText.length
+          onOffset += mergeText.length
+          ofOffset += mergeText.length
           
           i++
           j++
