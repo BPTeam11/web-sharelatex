@@ -89,7 +89,7 @@ define () ->
 
     cacheDocument: (doc, changed) =>
       @lastCache = Date.now()   
-      console.log "================DEBUG================", doc.getSnapshot()
+      #console.log "================DEBUG================", doc.getSnapshot()
       @ide.indexedDbManager.put(
         "doc"
           doclines: doc.getSnapshot().split("\n")
@@ -105,7 +105,7 @@ define () ->
 
 
     cacheRecivedDocument: (doc) =>
-      console.log "================DEBUG================", doc.lines
+      #console.log "================DEBUG================", doc.lines
       @ide.indexedDbManager.put(
         "doc"
           doclines: doc.lines

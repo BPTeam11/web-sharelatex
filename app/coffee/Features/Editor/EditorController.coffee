@@ -217,6 +217,7 @@ module.exports = EditorController =
 		OfflineChangeHandler.mergeWhenPossible project_id, user_id, sessionId, doc,
 			(onlineChanges, clientMergeOps, newVersion) =>
 				for change in onlineChanges
+					console.log "mergeDoc: received change:", change
 					# TODO maybe (dunno if this is a big problem): make sure the pending
 					# queue is empty so that no updates are insserted while changes are
 					# computed -> lock the queue
