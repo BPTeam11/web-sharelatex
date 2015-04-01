@@ -1,7 +1,7 @@
 define () ->
   class CacheUpdater
     constructor: (@ide) ->
-      @ide.socket.on "connect", () =>
+      @ide.offlineStoreManager.addMergeListener () =>
         @ide.$http.get "/project/#{@ide.project_id}/cache", {timeout: 20000}
           .success (data)=>
             project = data.projectCache

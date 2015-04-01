@@ -64,16 +64,44 @@ module.exports = OfflineChangeHandler =
   mergeWhenPossible: (project_id, user_id, sessionId, doc,
     callback = (mergedChange, clientMergeOps, newVersion) ->)->
 
-      #console.log "MergeHandler here :)  Old version:"
-      #console.log doc.version
+      console.log "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+      console.log "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+      console.log "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n"
       
       offlineDocText = doc.doclines.join('\n')
       @getDocumentText project_id, doc.doc_id, doc.version,
         (oldDocText, onlineDocText, onlineVersion) =>
           @getPatches oldDocText, offlineDocText, onlineDocText,
             (ofp, onp) =>
+              @logFull "Off Text", offlineDocText.split "\n"
+              console.log "------------------------------"
+              @logFull "Old Text", oldDocText.split "\n"
+              console.log "------------------------------"
+              @logFull "Onl Text", onlineDocText.split "\n"
+
+              console.log "\n==============================\n"
+
+              @logFull "off patches", ofp
+              console.log "------------------------------"
+              @logFull "onl patches", onp
+
+              console.log "\n==============================\n"
+
               @mergeAndIntegrate offlineDocText, onlineDocText, ofp, onp,
                 (opsForOnline, opsForOffline) =>
+                  @logFull "ops onl", opsForOnline
+                  console.log "------------------------------"
+                  @logFull "ops off", opsForOffline
+
+                  console.log "\n==============================\n"
+
+                  console.log "current online version: #{onlineVersion}"
+                  console.log "predicted new version: #{onlineVersion + opsForOnline.length}"
+
+                  console.log "\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+                  console.log "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+                  console.log "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+
 
                   # ignore conflicts for now
                   # this may be splitted up into single ops:
@@ -91,7 +119,7 @@ module.exports = OfflineChangeHandler =
                   
                   #@logFull "mergedChange", mergedChange
                   callback mergedChange, opsForOffline,
-                    onlineVersion + opsForOnline.length
+                    onlineVersion + 1 #opsForOnline.length
     
   ###
     offline- and online-Patch need to be sorted
@@ -122,7 +150,8 @@ module.exports = OfflineChangeHandler =
       
       # current offsets from the old doc. These will be added to start2 when
       # finally applying a patch
-      offset = 0
+      offsetOff = 0
+      offsetOnl = 0
       
       # if both ofp and onp are empty, there are no merges and no conflicts
       if (ofp.length == onp.length == 0)
@@ -145,16 +174,16 @@ module.exports = OfflineChangeHandler =
         # add remaining online patches
         if (i == ofp.length)
           for patch, index in onp when index >= j
-            patch.start2 += offset
-            offset += patch.offset
+            patch.start2 += offsetOnl
+            offsetOff += patch.offset
             opsForOffline.push @patch2ops(patch)...
           break # quit while loop
         
         # add remaining offline patches
         if (j == onp.length)
           for patch, index in ofp when index >= i
-            patch.start2 += offset
-            offset += patch.offset
+            patch.start2 += offsetOff
+            offsetOnl += patch.offset
             opsForOnline.push @patch2ops(patch)...
           break # quit while loop
           
@@ -174,16 +203,16 @@ module.exports = OfflineChangeHandler =
         # offlinePatch first, no conflict
         if (ofp[i].end1 < onp[j].start1)
             # integrate offlinePatch
-            ofp[i].start2 += offset
-            offset += ofp[i].offset
+            ofp[i].start2 += offsetOff
+            offsetOnl += ofp[i].offset
             opsForOnline.push @patch2ops(ofp[i])...
             i++
         
         # onlinePatch first, no conflict
         else if (onp[j].end1 < ofp[i].start1)
             # integrate onlinePatch
-            onp[j].start2 += offset
-            offset += onp[j].offset
+            onp[j].start2 += offsetOnl
+            offsetOff += onp[j].offset
             opsForOffline.push @patch2ops(onp[j])...
             j++
 
@@ -230,15 +259,16 @@ module.exports = OfflineChangeHandler =
           #console.log "offlineText", offlineText
           #console.log "onlineText", onlineText
           
-          conflictPos = minPatchStart + offset
+          conflictPosOff = offlinePatchStart + offsetOff
+          conflictPosOnl = onlinePatchStart + offsetOnl
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
-            p: conflictPos
+            p: conflictPosOff
             d: offlineText
             }
           opsForOnline.push {
-            p: conflictPos
+            p: conflictPosOnl
             d: onlineText
             }
           
@@ -246,12 +276,14 @@ module.exports = OfflineChangeHandler =
           mergeText = onlineConflictBegin + onlineText + onlineConflictEnd +
             offlineConflictBegin + offlineText + offlineConflictEnd
           
-          mergeInsert = { p: conflictPos, i: mergeText }
+          mergeInsertOff = { p: conflictPosOff, i: mergeText }
+          mergeInsertOnl = { p: conflictPosOnl, i: mergeText }
           
-          opsForOffline.push mergeInsert
-          opsForOnline.push mergeInsert
+          opsForOffline.push mergeInsertOff
+          opsForOnline.push mergeInsertOnl
           
-          offset += mergeText.length
+          offsetOff += mergeText.length
+          offsetOnl += mergeText.length
           
           i++
           j++

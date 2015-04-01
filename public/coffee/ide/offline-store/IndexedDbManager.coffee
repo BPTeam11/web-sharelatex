@@ -47,12 +47,14 @@ define [], () ->
         @pendingOps.push f
 
     get: (store, key, callback = (result, error)->) =>
+      console.log "idbm.get", store, key
       @readyHandler () =>
         req = @db.transaction([store], "readonly").objectStore(store).get(key)
         req.onerror = (event) -> callback null, event.target.errorCode
         req.onsuccess = (event) -> callback event.target.result
 
     add: (store, data, callback = (key, error)-> ) =>
+      console.log "idbm.add", store, data
       @readyHandler () =>
         trans = @db.transaction([store], "readwrite")
         trans.onerror = (event) -> callback null, event.target.errorCode
@@ -61,7 +63,7 @@ define [], () ->
           trans.oncomplete = (e) -> callback event.target.result
 
     put: (store, data, callback = (key, error)-> ) =>
-      console.log "~~~~~~~~~~~~~DEBUG~~~~~~~~~~~~", data
+      console.log "idbm.put", store, data
       @readyHandler () =>
         trans = @db.transaction([store], "readwrite")
         trans.onerror = (event) -> callback null, event.target.errorCode
@@ -70,6 +72,7 @@ define [], () ->
           trans.oncomplete = (e) -> callback event.target.result
 
     delete: (store, key, callback = (error)->) =>
+      console.log "idbm.delete", store, key
       @readyHandler () =>
         trans = @db.transaction([store], "readwrite")
         trans.onerror = (event) -> callback event.target.errorCode
@@ -78,12 +81,14 @@ define [], () ->
         trans.objectStore(store).delete(key)
 
     openCursor: (store, args..., callback = (cursor, error)-> ) =>
+      console.log "idbm.openCursor", store, args
       @readyHandler () =>
         req = @db.transaction([store], "readonly").objectStore(store).openCursor(args...)
         req.onerror = (event) -> callback null, event.target.errorCode
         req.onsuccess = (event) -> callback event.target.result
 
     clear: (store, callback = (error)-> ) =>
+      console.log "idbm.clear", store
       @readyHandler () =>
         req = @db.transaction([store], "readwrite").objectStore(store).clear()
         req.onerror = (event) -> callback event.target.errorCode

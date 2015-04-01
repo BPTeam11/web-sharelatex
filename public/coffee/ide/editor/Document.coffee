@@ -74,9 +74,11 @@ define [
       @doc?.hasBufferedOps()
 
     pause: () =>
+      console.log "paused document."
       @paused = true
 
     unpause: () =>
+      console.log "unpaused document."
       @paused = false
 
     _bindToSocketEvents: () ->

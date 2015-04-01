@@ -2,15 +2,16 @@ define () ->
   class OfflineStoreManager
     constructor: (@ide) ->
       @lastCache = 0
+      @mergeListeners = []
 
       @ide.$scope.$on "doc:change", (event, doc) =>
         if @timeout?
           clearTimeout @timeout
 
-        if !@ide.$scope.connection.connected || Date.now() - @lastCache >= 5000
+        if @isOffline() || Date.now() - @lastCache >= 5000
           @timeout = null
           @cacheDocument doc, true
-          if !@ide.$scope.connection.connected 
+          if @isOffline()
             doc.deletePendingOps()
             doc.deleteInflightOp()
           
@@ -18,7 +19,7 @@ define () ->
           @timeout = setTimeout ()=>
             @timeout = null
             @cacheDocument doc, true
-            if !@ide.$scope.connection.connected 
+            if @isOffline()
               doc.deletePendingOps()
               doc.deleteInflightOp()
           , 2000
@@ -27,13 +28,17 @@ define () ->
         console.log "connect"
         @uploadOfflineChanges()
 
+      @ide.socket.on "disconnect", () ->
+        console.log "disconnect"
+
     uploadOfflineChanges: () =>
+      console.log "Uploading offline changes:"
+      curDocChanged = false
+
       @ide.indexedDbManager.openCursor "changedOffline", (cursor, err) =>
         if err?
           console.log "Error looking up offline changes: #{err}"
         else
-          console.log "Uploading offline changes:"
-          curDocChanged = false
           if cursor
             doc_id = cursor.value.doc_id
 
@@ -56,17 +61,15 @@ define () ->
                     console.log "merged doc is currently open, applying updates..."
                     doc = @ide.editorManager.getCurrentDoc()
                     sjsDoc = doc.doc
-                    version = sjsDoc._doc.version
                     console.log "applying", data.ops
                     msg =
                       op: data.ops
-                      v: version
+                      v: sjsDoc._doc.version
                       doc: sjsDoc._doc.name
                       meta: {}
                       
                     # fixme: this is *not* an usual update from server
                     sjsDoc.processUpdateFromServer msg
-                    version++
                       
                     console.log "updates done"
                     console.log "setting version to #{data.newVersion}"
@@ -87,9 +90,11 @@ define () ->
             if !curDocChanged
               @ide.editorManager.getCurrentDoc()?.unpause()
 
+            for listener in @mergeListeners
+              listener()
+
     cacheDocument: (doc, changed) =>
-      @lastCache = Date.now()   
-      console.log "================DEBUG================", doc.getSnapshot()
+      @lastCache = Date.now()
       @ide.indexedDbManager.put(
         "doc"
           doclines: doc.getSnapshot().split("\n")
@@ -97,7 +102,7 @@ define () ->
           doc_id: doc.doc_id
         (res, err) -> if(err?) then console.log "Error caching document: #{err}")
 
-      if changed
+      if changed && @isOffline()
         @ide.indexedDbManager.put "changedOffline", { doc_id: doc.doc_id }, (res, err) ->
           if err?
             console.log "Error marking doc #{doc.doc_id} changed:"
@@ -171,5 +176,8 @@ define () ->
           permissionsLevel: @ide.$scope.permissionsLevel
         (res, err) -> if(err?) then console.log "Error caching project: #{err}")
 
+    addMergeListener: (listener) =>
+      @mergeListeners.push listener
 
-
+    isOffline: () =>
+      !@ide.$scope.connection.connected
