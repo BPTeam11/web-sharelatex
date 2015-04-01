@@ -235,11 +235,11 @@ module.exports = OfflineChangeHandler =
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
-            p: offlineAreaStart
+            p: conflictPos
             d: offlineText
             }
           opsForOnline.push {
-            p: onlineAreaStart
+            p: conflictPos
             d: onlineText
             }
           
@@ -249,11 +249,11 @@ module.exports = OfflineChangeHandler =
           
           # insert merge text
           opsForOffline.push {
-            p: offlineAreaStart
+            p: conflictPos
             i: mergeText
             }
           opsForOnline.push {
-            p: onlineAreaStart
+            p: conflictPos
             i: mergeText
             }          
 
