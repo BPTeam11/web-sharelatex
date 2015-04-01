@@ -62,7 +62,7 @@ module.exports = OfflineChangeHandler =
   #      Updated positions to correspond to newVersion
   #
   mergeWhenPossible: (project_id, user_id, sessionId, doc,
-    callback = (mergedChange, clientMergeOps, newVersion) ->)->
+    callback = (docLines) ->)->
 
       #console.log "MergeHandler here :)  Old version:"
       #console.log doc.version
@@ -89,10 +89,14 @@ module.exports = OfflineChangeHandler =
                   #console.log "onlineVersion", onlineVersion
                   #console.log "opsForOnline.length", opsForOnline.length
                   
-                  #@logFull "mergedChange", mergedChange
-                  callback mergedChange, opsForOffline,
-                    onlineVersion + opsForOnline.length
-    
+                  mergedDoc = @applyOps onlineDocText, opsForOnline
+                  docLines = mergedDoc.split("\n")
+
+                  console.log "================DEBUG================"
+                  console.log mergedDoc
+
+                  callback(docLines)
+
   ###
     offline- and online-Patch need to be sorted
     ofc and onc do not necessarily have the same length
@@ -122,7 +126,8 @@ module.exports = OfflineChangeHandler =
       
       # current offsets from the old doc. These will be added to start2 when
       # finally applying a patch
-      offset = 0
+      onOffset = 0
+      ofOffset = 0
       
       # if both ofp and onp are empty, there are no merges and no conflicts
       if (ofp.length == onp.length == 0)
@@ -145,16 +150,16 @@ module.exports = OfflineChangeHandler =
         # add remaining online patches
         if (i == ofp.length)
           for patch, index in onp when index >= j
-            patch.start2 += offset
-            offset += patch.offset
+            patch.start2 += onOffset
+            #offset += patch.offset
             opsForOffline.push @patch2ops(patch)...
           break # quit while loop
         
         # add remaining offline patches
         if (j == onp.length)
           for patch, index in ofp when index >= i
-            patch.start2 += offset
-            offset += patch.offset
+            patch.start2 += ofOffset
+            #offset += patch.offset
             opsForOnline.push @patch2ops(patch)...
           break # quit while loop
           
@@ -174,16 +179,16 @@ module.exports = OfflineChangeHandler =
         # offlinePatch first, no conflict
         if (ofp[i].end1 < onp[j].start1)
             # integrate offlinePatch
-            ofp[i].start2 += offset
-            offset += ofp[i].offset
+            ofp[i].start2 += ofOffset
+            onOffset += ofp[i].offset
             opsForOnline.push @patch2ops(ofp[i])...
             i++
         
         # onlinePatch first, no conflict
         else if (onp[j].end1 < ofp[i].start1)
             # integrate onlinePatch
-            onp[j].start2 += offset
-            offset += onp[j].offset
+            onp[j].start2 += onOffset
+            ofOffset += onp[j].offset
             opsForOffline.push @patch2ops(onp[j])...
             j++
 
@@ -216,29 +221,29 @@ module.exports = OfflineChangeHandler =
           # map to current text
           offlineAreaStart = minPatchStart - ofp[i].start1 + ofp[i].start2
           offlineAreaEnd   = maxPatchEnd   - ofp[i].end1   + ofp[i].end2
-          onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2
+          onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2 
           onlineAreaEnd    = maxPatchEnd   - onp[j].end1   + onp[j].end2
           
-          #console.log "offlineAreaStart", offlineAreaStart
-          #console.log "offlineAreaEnd", offlineAreaEnd
-          #console.log "onlineAreaStart", onlineAreaStart
-          #console.log "onlineAreaEnd", onlineAreaEnd
+          console.log "offlineAreaStart", offlineAreaStart
+          console.log "offlineAreaEnd", offlineAreaEnd
+          console.log "onlineAreaStart", onlineAreaStart
+          console.log "onlineAreaEnd", onlineAreaEnd
           
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
-          #console.log "offlineText", offlineText
-          #console.log "onlineText", onlineText
+          console.log "offlineText", offlineText
+          console.log "onlineText", onlineText
           
-          conflictPos = minPatchStart + offset
+          conflictPos = minPatchStart
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
-            p: conflictPos
+            p: conflictPos + onOffset + ofOffset
             d: offlineText
             }
           opsForOnline.push {
-            p: conflictPos
+            p: conflictPos + onOffset + ofOffset
             d: onlineText
             }
           
@@ -246,12 +251,23 @@ module.exports = OfflineChangeHandler =
           mergeText = onlineConflictBegin + onlineText + onlineConflictEnd +
             offlineConflictBegin + offlineText + offlineConflictEnd
           
-          mergeInsert = { p: conflictPos, i: mergeText }
+
+          mergeInsertOn = { p: conflictPos + onOffset + ofOffset, i: mergeText }          
+          mergeInsertOf = { p: conflictPos + onOffset + ofOffset, i: mergeText }
+
           
-          opsForOffline.push mergeInsert
-          opsForOnline.push mergeInsert
+
+          console.log "offlineConflictPos:", conflictPos + ofOffset, ofOffset
+          console.log "onlineConflictPos:", conflictPos + onOffset, onOffset
+          console.log "offlineConflictPos++:", conflictPos + ofOffset+ onOffset
+
+
+          opsForOffline.push mergeInsertOf
+          opsForOnline.push mergeInsertOn
           
-          offset += mergeText.length
+          #This may fail on delete
+          onOffset += mergeText.length - onlineText.length
+          ofOffset += mergeText.length - offlineText.length
           
           i++
           j++
@@ -406,6 +422,23 @@ module.exports = OfflineChangeHandler =
       changedDoc = strInject docText, op.p, op.d
     changedDoc
   
+  applyOps: (snapshot, op) ->
+    console.log "~~~~~~~~~~~~~~~DEBUG-Snapshot~~~~~~~~~~~~"
+    console.log snapshot
+    for component in op
+      console.log "~~~~~~~~~~~~~~~DEBUG-Component~~~~~~~~~~~~"
+      console.log component
+      if component.i?
+        snapshot = strInject snapshot, component.p, component.i
+      else
+        deleted = snapshot[component.p...(component.p + component.d.length)]
+        throw new Error "Delete component '#{component.d}' does not match deleted text '#{deleted}'" unless component.d == deleted
+        snapshot = snapshot[...component.p] + snapshot[(component.p + component.d.length)..]
+    snapshot
+
+
+
+
   min: (a, b) ->
     if (a < b)
       return a

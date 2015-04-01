@@ -105,7 +105,7 @@ define () ->
 
 
     cacheRecivedDocument: (doc) =>
-      console.log "================DEBUG================", doc.lines
+      console.log "--------------DEBUG------------", doc.lines
       @ide.indexedDbManager.put(
         "doc"
           doclines: doc.lines

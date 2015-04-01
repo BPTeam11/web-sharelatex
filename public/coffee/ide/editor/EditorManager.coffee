@@ -79,6 +79,7 @@ define [
 		_bindToDocumentEvents: (doc, sharejs_doc) ->
 			sharejs_doc.on "error", (error) =>
 				@openDoc(doc, forceReopen: true)
+				window.location.reload()
 				@ide.showGenericMessageModal(
 					"Out of sync"
 					"Sorry, this file has gone out of sync and we need to do a full refresh. Please let us know if this happens frequently."
@@ -86,6 +87,7 @@ define [
 
 			sharejs_doc.on "externalUpdate", (update) =>
 				return if @_ignoreExternalUpdates
+				window.location.reload()
 				@ide.showGenericMessageModal(
 					"Document Updated Externally"
 					"This document was just updated externally. Any recent changes you have made may have been overwritten. To see previous versions please look in the history."
