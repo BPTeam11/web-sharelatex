@@ -217,29 +217,29 @@ module.exports = OfflineChangeHandler =
           # map to current text
           offlineAreaStart = minPatchStart - ofp[i].start1 + ofp[i].start2
           offlineAreaEnd   = maxPatchEnd   - ofp[i].end1   + ofp[i].end2
-          onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2
+          onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2 
           onlineAreaEnd    = maxPatchEnd   - onp[j].end1   + onp[j].end2
           
-          #console.log "offlineAreaStart", offlineAreaStart
-          #console.log "offlineAreaEnd", offlineAreaEnd
-          #console.log "onlineAreaStart", onlineAreaStart
-          #console.log "onlineAreaEnd", onlineAreaEnd
+          console.log "offlineAreaStart", offlineAreaStart
+          console.log "offlineAreaEnd", offlineAreaEnd
+          console.log "onlineAreaStart", onlineAreaStart
+          console.log "onlineAreaEnd", onlineAreaEnd
           
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
-          #console.log "offlineText", offlineText
-          #console.log "onlineText", onlineText
+          console.log "offlineText", offlineText
+          console.log "onlineText", onlineText
           
-          conflictPos = minPatchStart #+ offset
+          conflictPos = minPatchStart
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
-            p: conflictPos
+            p: conflictPos + onOffset + ofOffset
             d: offlineText
             }
           opsForOnline.push {
-            p: conflictPos
+            p: conflictPos + onOffset + ofOffset
             d: onlineText
             }
           
@@ -247,13 +247,20 @@ module.exports = OfflineChangeHandler =
           mergeText = onlineConflictBegin + onlineText + onlineConflictEnd +
             offlineConflictBegin + offlineText + offlineConflictEnd
           
-          mergeInsert = { p: conflictPos, i: mergeText }
+          mergeInsertOn = { p: conflictPos + onOffset + ofOffset, i: mergeText }          
+          mergeInsertOf = { p: conflictPos + onOffset + ofOffset, i: mergeText }
           
-          opsForOffline.push mergeInsert
-          opsForOnline.push mergeInsert
+
+          console.log "offlineConflictPos:", conflictPos + ofOffset, ofOffset
+          console.log "onlineConflictPos:", conflictPos + onOffset, onOffset
+          console.log "offlineConflictPos++:", conflictPos + ofOffset+ onOffset
+
+          opsForOffline.push mergeInsertOf
+          opsForOnline.push mergeInsertOn
           
-          onOffset += mergeText.length
-          ofOffset += mergeText.length
+          #This may fail on delete
+          onOffset += mergeText.length - onlineText.length
+          ofOffset += mergeText.length - offlineText.length
           
           i++
           j++
