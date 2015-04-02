@@ -74,26 +74,18 @@ module.exports = OfflineChangeHandler =
             (ofp, onp) =>
               @mergeAndIntegrate offlineDocText, onlineDocText, ofp, onp,
                 (opsForOnline, opsForOffline) =>
-                  onlineChanges = []
-                  version = onlineVersion
-                  for op in opsForOnline
-                    change = {
-                      doc: doc.doc_id
-                      op: op
-                      v : version
-                      meta : {
-                        source: sessionId
-                        user_id: user_id
-                      }
-                      meta: {}
+                  change =
+                    doc: doc.doc_id
+                    op: op
+                    v : onlineVersion
+                    meta : {
+                      source: sessionId
+                      user_id: user_id
                     }
-                    onlineChanges.push change
-                    version++
                   
                   @logFull "------------onlineChanges-----------", onlineChanges
                   @logFull "------------opsForOffline-----------", opsForOffline
-                  console.log "new version:", version
-                  callback onlineChanges, opsForOffline, version
+                  callback onlineChanges, opsForOffline, onlineVersion + 1
     
   ###
     offline- and online-Patch need to be sorted
