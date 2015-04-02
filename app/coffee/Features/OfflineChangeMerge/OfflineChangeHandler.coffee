@@ -424,7 +424,7 @@ module.exports = OfflineChangeHandler =
       console.log onlineDocText
 
       # go through the array from back to front and reverse ops
-      if previousOps.length != 0
+      if previousOps?.length != 0
         for i in [(previousOps.length-1)..0]
           for op in previousOps[i].op
             oldDocText = @reverseOp(oldDocText, op)
@@ -448,9 +448,6 @@ module.exports = OfflineChangeHandler =
       DocumentUpdaterHandler.getDocument project_id, doc_id, -1, (err, onlineDocLines, onlineVersion, opsNew)->
         console.log "This should be the new version:"
         console.log version
-        console.log "ops of old versions"
-        for op in previousOps
-          console.log op
         callback(onlineDocLines, previousOps, onlineVersion)
 
   reverseOp: (docText, op) ->
