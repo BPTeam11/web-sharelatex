@@ -237,6 +237,14 @@ module.exports = OfflineChangeHandler =
           offlinePatchEnd   = ofp[i].end1   - ofp[i].endWordDiff
           onlinePatchStart  = onp[j].start1 + onp[j].startWordDiff
           onlinePatchEnd    = onp[j].end1   - onp[j].endWordDiff
+
+          console.log "onp[j]" ,onp[j]
+          console.log "ofp[i]" ,ofp[i]
+
+          console.log "offlinePatchStart" ,offlinePatchStart
+          console.log "offlinePatchEnd" ,offlinePatchEnd
+          console.log "onlinePatchStart" ,onlinePatchStart
+          console.log "onlinePatchEnd" ,onlinePatchEnd
           
           # use the area that includes both patches
           minPatchStart = @min(offlinePatchStart, onlinePatchStart)
@@ -248,16 +256,16 @@ module.exports = OfflineChangeHandler =
           onlineAreaStart  = minPatchStart - onp[j].start1 + onp[j].start2
           onlineAreaEnd    = maxPatchEnd   - onp[j].end1   + onp[j].end2
           
-          #console.log "offlineAreaStart", offlineAreaStart
-          #console.log "offlineAreaEnd", offlineAreaEnd
-          #console.log "onlineAreaStart", onlineAreaStart
-          #console.log "onlineAreaEnd", onlineAreaEnd
+          console.log "offlineAreaStart", offlineAreaStart
+          console.log "offlineAreaEnd", offlineAreaEnd
+          console.log "onlineAreaStart", onlineAreaStart
+          console.log "onlineAreaEnd", onlineAreaEnd
           
           # fetch the conflicting text area from both sides
           offlineText = offlineDocText[offlineAreaStart .. offlineAreaEnd]
           onlineText  = onlineDocText[onlineAreaStart .. onlineAreaEnd]
-          #console.log "offlineText", offlineText
-          #console.log "onlineText", onlineText
+          console.log "offlineText", offlineText
+          console.log "onlineText", onlineText
           
           conflictPosOff = offlineAreaStart + offsetOff
           conflictPosOnl = onlineAreaStart + offsetOnl
@@ -328,10 +336,14 @@ module.exports = OfflineChangeHandler =
     # If this is smaller then the algorithm is more careful.
     # For high Threshold it will override even if there's a confilct.
     dmp.Match_Threshold = 0.1
+
+    console.log "oldText" ,oldText
+    console.log "newText" ,newText
+
     patches = dmp.patch_make(oldText, newText)
     # extended patches
     extPatches = []
-    #@logFull "DMP patches", patches
+    @logFull "DMP patches", patches
     offset = 0
     for patch in patches
 
@@ -387,7 +399,7 @@ module.exports = OfflineChangeHandler =
       offset += extPatch.offset
       extPatches.push extPatch
     
-    #@logFull "calculated patches", extPatches
+    @logFull "calculated patches", extPatches
     return extPatches
 
   # getDocumentText generates a given document at a previous version
@@ -400,12 +412,15 @@ module.exports = OfflineChangeHandler =
     @getPreviousOps project_id, doc_id, version, (onlineDocLines, previousOps, onlineVersion) =>
       oldDocText = onlineDocLines.join('\n')
       onlineDocText = onlineDocLines.join('\n')
+      
+      @logFull 'oldDocText11', oldDocText
+      @logFull 'previousOps', previousOps
 
       # go through the array from back to front and reverse ops
       if previousOps.length != 0
         for i in [(previousOps.length-1)..0]
-          for op in previousOps[i].op
-            oldDocText = @reverseOp(oldDocText, op)
+          for j in [(previousOps[i].op.length-1)..0]
+            oldDocText = @reverseOp(oldDocText, previousOps[i].op[j])
 
       callback(oldDocText, onlineDocText, onlineVersion)
 
