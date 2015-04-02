@@ -389,6 +389,7 @@ module.exports = OfflineChangeHandler =
         extPatch.diffs.shift() # remove first entry
         extPatch.start1 += context1
         extPatch.start2 += context1
+        extPatch.start3 += context1
       if deleteContext2 == true
         extPatch.diffs.pop() # remove last entry
         extPatch.end1 -= context2
