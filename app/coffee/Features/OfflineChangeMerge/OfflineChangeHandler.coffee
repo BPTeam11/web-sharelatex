@@ -289,6 +289,12 @@ module.exports = OfflineChangeHandler =
     ops
 
   getPatches: (oldDocText, offlineDocText, onlineDocText, callback = (ofp, onp) -> ) ->
+    console.log "--------- oldDoc ----------"
+    console.log oldDocText
+    console.log "--------- offlineDoc ----------"
+    console.log offlineDocText
+    console.log "--------- onlineDoc ----------"
+    console.log onlineDocText
     ofp = @patchMake(oldDocText, offlineDocText)
     @logFull "ofp:", ofp
     onp = @patchMake(oldDocText, onlineDocText)
@@ -316,7 +322,7 @@ module.exports = OfflineChangeHandler =
     patches = dmp.patch_make(oldText, newText)
     # extended patches
     extPatches = []
-    @logFull "DMP patches", patches
+    #@logFull "DMP patches", patches
     offset = 0
     for patch in patches
 
@@ -398,7 +404,7 @@ module.exports = OfflineChangeHandler =
       offset += extPatch.offset
       extPatches.push extPatch
     
-    @logFull "calculated patches", extPatches
+    #@logFull "calculated patches", extPatches
     return extPatches
 
   # getDocumentText generates a given document at a previous version
@@ -408,9 +414,14 @@ module.exports = OfflineChangeHandler =
   #   project_id, doc_id: as always
   #   version: previously common document version
   getDocumentText: (project_id, doc_id, version, callback = (oldDocText, onlineDocText, onlineVersion) -> ) ->
+    console.log "attempting to get ops from version", version, "to now"
     @getPreviousOps project_id, doc_id, version, (onlineDocLines, previousOps, onlineVersion) =>
+      console.log "got onlineDocLines, previousOps, onlineVersion"
+      console.log "onlineVersion:", onlineVersion
       oldDocText = onlineDocLines.join('\n')
       onlineDocText = onlineDocLines.join('\n')
+      console.log "onlineDocText"
+      console.log onlineDocText
 
       # go through the array from back to front and reverse ops
       if previousOps.length != 0
@@ -418,6 +429,8 @@ module.exports = OfflineChangeHandler =
           for op in previousOps[i].op
             oldDocText = @reverseOp(oldDocText, op)
 
+      console.log "oldDocText:"
+      console.log oldDocText
       callback(oldDocText, onlineDocText, onlineVersion)
 
   # getPreviousOps returns the list of operations from 'version' to current,
@@ -433,12 +446,11 @@ module.exports = OfflineChangeHandler =
   getPreviousOps: (project_id, doc_id, version, callback = (onlineDocLines, previousOps, onlineVersion) -> ) ->
     DocumentUpdaterHandler.getDocument project_id, doc_id, version, (err, temp, version1, previousOps)->
       DocumentUpdaterHandler.getDocument project_id, doc_id, -1, (err, onlineDocLines, onlineVersion, opsNew)->
-        #console.log "This should be the new version:"
-        #console.log version
-        #console.log "ops of old versions"
-        #console.log previousOps
-        #for diff in previousOps
-        #  console.log diff.op
+        console.log "This should be the new version:"
+        console.log version
+        console.log "ops of old versions"
+        for op in previousOps
+          console.log op
         callback(onlineDocLines, previousOps, onlineVersion)
 
   reverseOp: (docText, op) ->
