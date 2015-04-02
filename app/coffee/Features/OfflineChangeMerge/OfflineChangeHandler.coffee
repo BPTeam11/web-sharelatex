@@ -259,8 +259,8 @@ module.exports = OfflineChangeHandler =
           #console.log "offlineText", offlineText
           #console.log "onlineText", onlineText
           
-          conflictPosOff = offlinePatchStart + offsetOff
-          conflictPosOnl = onlinePatchStart + offsetOnl
+          conflictPosOff = offlineAreaStart + offsetOff
+          conflictPosOnl = onlineAreaStart + offsetOnl
           
           # delete the conflicting text area on both sides
           opsForOffline.push {
@@ -282,8 +282,8 @@ module.exports = OfflineChangeHandler =
           opsForOffline.push mergeInsertOff
           opsForOnline.push mergeInsertOnl
           
-          offsetOff += mergeText.length
-          offsetOnl += mergeText.length
+          offsetOff += mergeText.length - offlineText.length
+          offsetOnl += mergeText.length  - onlineText.length
           
           i++
           j++
