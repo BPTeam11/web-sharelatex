@@ -97,7 +97,7 @@ module.exports = DocumentUpdaterHandler =
 				logger.error err: error, project_id: project_id, doc_id: doc_id, "document updater returned failure status code: #{res.statusCode}"
 				return callback(error)
 
-	getDocument: (project_id, doc_id, fromVersion, callback = (error, exists, doclines, version) ->) ->
+	getDocument: (project_id, doc_id, fromVersion, callback = (error, docLines, version, previousOps) ->) ->
 		timer = new metrics.Timer("get-document")
 		url = "#{settings.apis.documentupdater.url}/project/#{project_id}/doc/#{doc_id}?fromVersion=#{fromVersion}"
 		logger.log project_id:project_id, doc_id: doc_id, "getting doc from document updater"
