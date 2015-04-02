@@ -248,15 +248,10 @@ module.exports = OfflineChangeHandler =
           mergeText = onlineConflictBegin + onlineText + onlineConflictEnd +
             offlineConflictBegin + offlineText + offlineConflictEnd
           
-          # insert merge text
-          opsForOffline.push {
-            p: conflictPos
-            i: mergeText
-            }
-          opsForOnline.push {
-            p: conflictPos
-            i: mergeText
-            }          
+          mergeInsert = { p: conflictPos, i: mergeText }
+
+          opsForOffline.push mergeInsert
+          opsForOnline.push mergeInsert
 
           offset += mergeText.length
           
@@ -395,7 +390,7 @@ module.exports = OfflineChangeHandler =
         extPatch.start1 += context1
         extPatch.start2 += context1
       if deleteContext2 == true
-        extPatch.diffs.pop() # remove first entry
+        extPatch.diffs.pop() # remove last entry
         extPatch.end1 -= context2
         extPatch.end2 -= context2
 
