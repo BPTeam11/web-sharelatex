@@ -81,10 +81,10 @@ module.exports = OfflineChangeHandler =
                       doc: doc.doc_id
                       op: op
                       v : version
-                      #meta : {
-                      #  source: sessionId
-                      #  user_id: user_id
-                      #}
+                      meta : {
+                        source: sessionId
+                        user_id: user_id
+                      }
                       meta: {}
                     }
                     onlineChanges.push change
